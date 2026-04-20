@@ -2,10 +2,56 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8" />
-  <title>FUT Orders</title>
+  <title>FUT Orders Dashboard</title>
+  <style>
+    body { font-family: Arial; background:#111; color:#eee; padding:20px }
+    h1 { color:#4ade80 }
+    section { margin-bottom:30px }
+    pre { background:#222; padding:15px; overflow:auto }
+    button { padding:8px 14px; cursor:pointer }
+  </style>
 </head>
 <body>
-  <h1>✅ FUT Orders</h1>
-  <p>Il server funziona correttamente.</p>
+
+<h1>✅ FUT Orders – Dashboard</h1>
+
+<section>
+  <h2>📊 Stats</h2>
+  <button onclick="loadStats()">Carica stats</button>
+  <pre id="stats"></pre>
+</section>
+
+<section>
+  <h2>👤 Accounts</h2>
+  <button onclick="loadAccounts()">Carica account</button>
+  <pre id="accounts"></pre>
+</section>
+
+<section>
+  <h2>📦 Ordini</h2>
+  <button onclick="loadOrders()">Carica ordini</button>
+  <pre id="orders"></pre>
+</section>
+
+<script>
+async function loadStats() {
+  const res = await fetch('/api/stats');
+  document.getElementById('stats').textContent =
+    JSON.stringify(await res.json(), null, 2);
+}
+
+async function loadAccounts() {
+  const res = await fetch('/api/accounts');
+  document.getElementById('accounts').textContent =
+    JSON.stringify(await res.json(), null, 2);
+}
+
+async function loadOrders() {
+  const res = await fetch('/api/orders');
+  document.getElementById('orders').textContent =
+    JSON.stringify(await res.json(), null, 2);
+}
+</script>
+
 </body>
 </html>

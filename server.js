@@ -6,35 +6,74 @@ const path = require('path');
 const app = express();
 const db = new Database('fut_orders.db');
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Static files
+// ✅ file statici
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Home route
+// ✅ home
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// --------------------
-// DATABASE INIT
-// --------------------
+// ✅ database init (ATTENZIONE AI BACKTICK)
 db.exec(`
-  CREATE TABLE IF NOT EXISTS accounts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    email TEXT,
-    platform TEXT NOT NULL CHECK(platform IN ('ps', 'xbox', 'pc')),
-    coin_balance INTEGER DEFAULT 0,
-    is_active INTEGER DEFAULT 1,
-    daily_limit INTEGER DEFAULT 5000000,
-    transferred_today INTEGER DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+CREATE TABLE IF NOT EXISTS accounts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT,
+  platform TEXT NOT NULL,
+  coin_balance INTEGER DEFAULT 0,
+  is_active INTEGER DEFAULT 1,
+  daily_limit INTEGER DEFAULT 5000000,
+  transferred_today INTEGER DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 
-  CREATE TABLE IF NOT EXISTS orders (
+CREATE TABLE IF NOT EXISTS orders (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  order_code TEXT UNIQUE NOT NULL,
+  customer_name TEXT NOT NULL,
+  customer_contact TEXT,
+  customer_ea_id TEXT NOT NULL,
+  platform TEXT NOT NULL,
+  coins_requested INTEGER NOT NULL,
+  price_eur REAL,
+  status TEXT DEFAULT 'pending',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT
+);
+`);
+
+// prezzi default
+const exists = db
+  .prepare("SELECT 1 FROM settings WHERE key = 'price_per_million_ps'")
+  .get();
+
+if (!exists) {
+  db.exec(`
+    INSERT INTO settings (key, value) VALUES
+    ('price_per_million_ps', '4.50'),
+    ('price_per_million_xbox', '4.00'),
+    ('price_per_million_pc', '3.50');
+  `);
+}
+
+// test API
+app.get('/api/stats', (req, res) => {
+  res.json({ ok: true });
+});
+
+// ✅ start server
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log(`✅ Server running on http://localhost:${PORT}`);
+});  CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     order_code TEXT UNIQUE NOT NULL,
     customer_name TEXT NOT NULL,

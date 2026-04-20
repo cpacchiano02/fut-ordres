@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FUT Orders - Gestione Crediti</title>
+  <script src="[cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+  <link href="[fonts.googleapis.com](https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap)" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .tab-active { border-bottom: 2px solid #3b82f6; color: #3b82f6; }
+  </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+  <div id="app">
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700 px-6 py-4">
+      <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-blue-400">⚽ FUT Orders</h1>
+        <div class="text-sm text-gray-400" id="datetime"></div>
+      </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="bg-gray-800 px-6 border-b border-gray-700">
+      <div class="flex space-x-8">
+        <button onclick="showTab('dashboard')" class="tab py-4 px-2 text-sm font-medium text-gray-400 hover:text-white" id="tab-dashboard">Dashboard</button>
+        <button onclick="showTab('orders')" class="tab py-4 px-2 text-sm font-medium text-gray-400 hover:text-white" id="tab-orders">Ordini</button>
+        <button onclick="showTab('accounts')" class="tab py-4 px-2 text-sm font-medium text-gray-400 hover:text-white" id="tab-accounts">Account</button>
+        <button onclick="showTab('new-order')" class="tab py-4 px-2 text-sm font-medium text-gray-400 hover:text-white" id="tab-new-order">+ Nuovo Ordine</button>
+        <button onclick="showTab('settings')" class="tab py-4 px-2 text-sm font-medium text-gray-400 hover:text-white" id="tab-settings">Impostazioni</button>
+      </div>
+    </nav>
+
+    <!-- Content -->
+    <main class="p-6">
+      <!-- Dashboard -->
+      <div id="content-dashboard" class="content">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div class="bg-gray-800 rounded-xl p-6">
+            <div class="text-gray-400 text-sm mb-2">Account Attivi</div>
+            <div class="text-3xl font-bold" id="stat-accounts">-</div>
+          </div>
+          <div class="bg-gray-800 rounded-xl p-6">
+            <div class="text-gray-400 text-sm mb-2">Ordini in Attesa</div>
+            <div class="text-3xl font-bold text-yellow-400" id="stat-pending">-</div>
+          </div>
+          <div class="bg-gray-800 rounded-xl p-6">
+            <div class="text-gray-400 text-sm mb-2">Completati Oggi</div>
+            <div class="text-3xl font-bold text-green-400" id="stat-completed">-</div>
+          </div>
+          <div class="bg-gray-800 rounded-xl p-6">
+            <div class="text-gray-400 text-sm mb-2">Incasso Oggi</div>
+            <div class="text-3xl font-bold text-blue-400" id="stat-revenue">-</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div class="bg-gray-800 rounded-xl p-6">
+            <h3 class="font-semibold mb-4 flex items-center"><span class="text-blue-400 mr-2">🎮</span> PlayStation</h3>
+            <div class="text-2xl font-bold" id="coins-ps">0</div>
+            <div class="text-gray-400 text-sm">crediti disponibili</div>
+          </div>
+          <div class="bg-gray-800 rounded-xl p-6">
+            <h3 class="font-semibold mb-4 flex items-center"><span class="text-green-400 mr-2">🎮</span> Xbox</h3>
+            <div class="text-2xl font-bold" id="coins-xbox">0</div>
+            <div class="text-gray-400 text-sm">crediti disponibili</div>
+          </div>
+          <div class="bg-gray-800 rounded-xl p-6">
+            <h3 class="font-semibold mb-4 flex items-center"><span class="text-purple-400 mr-2">💻</span> PC</h3>
+            <div class="text-2xl font-bold" id="coins-pc">0</div>
+            <div class="text-gray-400 text-sm">crediti disponibili</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Orders -->
+      <div id="content-orders" class="content hidden">
+        <div class="bg-gray-800 rounded-xl overflow-hidden">
+          <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+            <h2 class="font-semibold">Lista Ordini</h2>
+            <div class="flex gap-2">
+              <select id="filter-status" onchange="loadOrders()" class="bg-gray-700 border border-gray-600 rounded px-3 py-1 text-sm">
+                <option value="">Tutti gli stati</option>
+                <option value="pending">In attesa</option>
+                <option value="processing">In lavorazione</option>
+                <option value="completed">Completati</option>
+                <option value="cancelled">Annullati</option>
+              </select>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-700 text-gray-300 text-sm">
+                <tr>
+                  <th class="px-4 py-3 text-left">Codice</th>
+                  <th class="px-4 py-3 text-left">Cliente</th>
+                  <th class="px-4 py-3 text-left">EA ID</th>
+                  <th class="px-4 py-3 text-left">Piattaforma</th>
+                  <th class="px-4 py-3 text-right">Crediti</th>
+                  <th class="px-4 py-3 text-right">Prezzo</th>
+                  <th class="px-4 py-3 text-center">Stato</th>
+                  <th class="px-4 py-3 text-left">Account</th>
+                  <th class="px-4 py-3 text-center">Azioni</th>
+                </tr>
+              </thead>
+              <tbody id="orders-table" class="divide-y divide-gray-700">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Accounts -->
+      <div id="content-accounts" class="content hidden">
+        <div class="bg-gray-800 rounded-xl overflow-hidden">
+          <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+            <h2 class="font-semibold">Account FUT Hunter</h2>
+            <button onclick="showAddAccount()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm font-medium">+ Aggiungi Account</button>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-gray-700 text-gray-300 text-sm">
+                <tr>
+                  <th class="px-4 py-3 text-left">Nome</th>
+                  <th class="px-4 py-3 text-left">Email</th>
+                  <th class="px-4 py-3 text-left">Piattaforma</th>
+                  <th class="px-4 py-3 text-right">Saldo</th>
+                  <th class="px-4 py-3 text-right">Trasferiti Oggi</th>
+                  <th class="px-4 py-3 text-right">Limite Giornaliero</th>
+                  <th class="px-4 py-3 text-center">Stato</th>
+                  <th class="px-4 py-3 text-center">Azioni</th>
+                </tr>
+              </thead>
+              <tbody id="accounts-table" class="divide-y divide-gray-700">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- New Order -->
+      <div id="content-new-order" class="content hidden">
+        <div class="max-w-2xl mx-auto">
+          <div class="bg-gray-800 rounded-xl p-6">
+            <h2 class="font-semibold text-xl mb-6">Nuovo Ordine</h2>
+            <form id="order-form" onsubmit="createOrder(event)" class="space-y-6">
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm text-gray-400 mb-2">Nome Cliente *</label>
+                  <input type="text" name="customer_name" required class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                </div>
+                <div>
+                  <label class="block text-sm text-gray-400 mb-2">Contatto (Telegram/WhatsApp)</label>
+                  <input type="text" name="customer_contact" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm text-gray-400 mb-2">EA ID / Username *</label>
+                  <input type="text" name="customer_ea_id" required class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                </div>
+                <div>
+                  <label class="block text-sm text-gray-400 mb-2">Piattaforma *</label>
+                  <select name="platform" required onchange="checkAvailability()" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                    <option value="">Seleziona...</option>
+                    <option value="ps">PlayStation</option>
+                    <option value="xbox">Xbox</option>
+                    <option value="pc">PC</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label class="block text-sm text-gray-400 mb-2">Crediti Richiesti *</label>
+                <input type="number" name="coins_requested" required min="10000" step="10000" onchange="checkAvailability()" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2" placeholder="Es. 1000000">
+              </div>
+              <div id="availability-check" class="bg-gray-700 rounded p-4 hidden">
+                <div id="availability-message"></div>
+              </div>
+              <div>
+                <label class="block text-sm text-gray-400 mb-2">Note</label>
+                <textarea name="notes" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2"></textarea>
+              </div>
+              <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded font-medium">Crea Ordine</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div id="content-settings" class="content hidden">
+        <div class="max-w-2xl mx-auto">
+          <div class="bg-gray-800 rounded-xl p-6">
+            <h2 class="font-semibold text-xl mb-6">Impostazioni Prezzi</h2>
+            <form id="settings-form" onsubmit="saveSettings(event)" class="space-y-6">
+              <div class="grid grid-cols-3 gap-4">
+                <div>
+                  <label class="block text-sm text-gray-400 mb-2">€ per Milione (PS)</label>
+                  <input type="number" step="0.01" name="price_per_million_ps" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                </div>
+                <div>
+                  <label class="block text-sm text-gray-400 mb-2">€ per Milione (Xbox)</label>
+                  <input type="number" step="0.01" name="price_per_million_xbox" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                </div>
+                <div>
+                  <label class="block text-sm text-gray-400 mb-2">€ per Milione (PC)</label>
+                  <input type="number" step="0.01" name="price_per_million_pc" class="w-full bg-gray-700 border border-gray-600 rounded px-4 py-2">
+                </div>
+              </div>
+              <button type="submit" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded font-medium">Salva Impostazioni</button>
+            </form>
+
+            <hr class="border-gray-700 my-8">
+
+            <div>
+              <h3 class="font-semibold mb-4">Manutenzione</h3>
+              <button onclick="resetDaily()" class="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded text-sm font-medium">Reset Contatori Giornalieri</button>
+              <p class="text-gray-400 text-sm mt-2">Azzera i crediti trasferiti oggi per tutti gli account (da usare ogni giorno)</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Modal -->
+    <div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+      <div class="bg-gray-800 rounded-xl p-6 max-w-md w-full mx-4">
+        <div id="modal-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API = '';
+
+    // Tab navigation
+    function showTab(tab) {
+      document.querySelectorAll('.content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('tab-active'));
+      document.getElementById(`content-${tab}`).classList.remove('hidden');
+      document.getElementById(`tab-${tab}`).classList.add('tab-active');
+      
+      if (tab === 'dashboard') loadStats();
+      if (tab === 'orders') loadOrders();
+      if (tab === 'accounts') loadAccounts();
+      if (tab === 'settings') loadSettings();
+    }
+
+    // Load stats
+    async function loadStats() {
+      const res = await fetch(`${API}/api/stats`);
+      const data = await res.json();
+      document.getElementById('stat-accounts').textContent = data.totalAccounts;
+      document.getElementById('stat-pending').textContent = data.pendingOrders;
+      document.getElementById('stat-completed').textContent = data.completedToday;
+      document.getElementById('stat-revenue').textContent = `€${data.revenueToday.toFixed(2)}`;
+      document.getElementById('coins-ps').textContent = formatCoins(data.totalCoins.ps);
+      document.getElementById('coins-xbox').textContent = formatCoins(data.totalCoins.xbox);
+      document.getElementById('coins-pc').textContent = formatCoins(data.totalCoins.pc);
+    }
+
+    // Load orders
+    async function loadOrders() {
+      const status = document.getElementById('filter-status').value;
+      const res = await fetch(`${API}/api/orders`);
+      let orders = await res.json();
+      if (status) orders = orders.filter(o => o.status === status);
+      
+      const tbody = document.getElementById('orders-table');
+      tbody.innerHTML = orders.map(o => `
+        <tr class="hover:bg-gray-750">
+          <td class="px-4 py-3 font-mono text-sm">${o.order_code}</td>
+          <td class="px-4 py-3">${o.customer_name}</td>
+          <td class="px-4 py-3 font-mono text-sm">${o.customer_ea_id}</td>
+          <td class="px-4 py-3"><span class="px-2 py-1 rounded text-xs ${getPlatformClass(o.platform)}">${o.platform.toUpperCase()}</span></td>
+          <td class="px-4 py-3 text-right">${formatCoins(o.coins_requested)}</td>
+          <td class="px-4 py-3 text-right">€${o.price_eur?.toFixed(2) || '-'}</td>
+          <td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded text-xs ${getStatusClass(o.status)}">${getStatusLabel(o.status)}</span></td>
+          <td class="px-4 py-3">${o.account_name || '-'}</td>
+          <td class="px-4 py-3 text-center">
+            <button onclick="showOrderActions(${o.id}, '${o.status}')" class="text-blue-400 hover:text-blue-300 text-sm">Gestisci</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // Load accounts
+    async function loadAccounts() {
+      const res = await fetch(`${API}/api/accounts`);
+      const accounts = await res.json();
+      
+      const tbody = document.getElementById('accounts-table');
+      tbody.innerHTML = accounts.map(a => `
+        <tr class="hover:bg-gray-750">
+          <td class="px-4 py-3 font-medium">${a.name}</td>
+          <td class="px-4 py-3 text-gray-400">${a.email || '-'}</td>
+          <td class="px-4 py-3"><span class="px-2 py-1 rounded text-xs ${getPlatformClass(a.platform)}">${a.platform.toUpperCase()}</span></td>
+          <td class="px-4 py-3 text-right font-mono">${formatCoins(a.coin_balance)}</td>
+          <td class="px-4 py-3 text-right font-mono">${formatCoins(a.transferred_today)}</td>
+          <td class="px-4 py-3 text-right font-mono">${formatCoins(a.daily_limit)}</td>
+          <td class="px-4 py-3 text-center">
+            <span class="px-2 py-1 rounded text-xs ${a.is_active ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}">
+              ${a.is_active ? 'Attivo' : 'Inattivo'}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-center">
+            <button onclick="editAccount(${a.id})" class="text-blue-400 hover:text-blue-300 text-sm mr-2">Modifica</button>
+            <button onclick="deleteAccount(${a.id})" class="text-red-400 hover:text-red-300 text-sm">Elimina</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // Load settings
+    async function loadSettings() {
+      const res = await fetch(`${API}/api/settings`);
+      const settings = await res.json();
+      document.querySelector('[name="price_per_million_ps"]').value = settings.price_per_million_ps || 4.5;
+      document.querySelector('[name="price_per_million_xbox"]').value = settings.price_per_million_xbox || 4;
+      document.querySelector('[name="price_per_million_pc"]').value = settings.price_per_million_pc || 3.5;
+    }
+
+    // Save settings
+    async function saveSettings(e) {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      const settings = Object.fromEntries(form);
+      await fetch(`${API}/api/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings)
+      });
+      alert('Impostazioni salvate!');
+    }
+
+    // Check availability
+    async function checkAvailability() {
+      const form = document.getElementById('order-form');
+      const platform = form.platform.value;
+      const coins = parseInt(form.coins_requested.value);
+      
+      if (!platform || !coins) {
+        document.getElementById('availability-check').classList.add('hidden');
+        return;
+      }
+      
+      const res = await fetch(`${API}/api/availability/${platform}/${coins}`);
+      const data = await res.json();
+      
+      const div = document.getElementById('availability-check');
+      const msg = document.getElementById('availability-message');
+      div.classList.remove('hidden');
+      
+      if (data.available) {
+        msg.innerHTML = `<span class="text-green-400">✓ Disponibile!</span> Prezzo: <strong>€${data.priceEur}</strong>`;
+      } else {
+        msg.innerHTML = `<span class="text-red-400">✗ Non disponibile.</span> Disponibili solo ${formatCoins(data.totalAvailable)} crediti su ${platform.toUpperCase()}`;
+      }
+    }
+
+    // Create order
+    async function createOrder(e) {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      const data = Object.fromEntries(form);
+      data.coins_requested = parseInt(data.coins_requested);
+      
+      const res = await fetch(`${API}/api/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      const result = await res.json();
+      if (result.success) {
+        alert(`Ordine creato!\n\nCodice: ${result.order_code}\nPrezzo: €${result.price_eur}\nAccount: ${result.account_assigned}`);
+        e.target.reset();
+        document.getElementById('availability-check').classList.add('hidden');
+        showTab('orders');
+      } else {
+        alert('Errore: ' + result.error);
+      }
+    }
+
+    // Show add account modal
+    function showAddAccount() {
+      const modal = document.getElementById('modal');
+      document.getElementById('modal-content').innerHTML = `
+        <h3 class="font-semibold text-lg mb-4">Aggiungi Account</h3>
+        <form onsubmit="addAccount(event)" class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Nome Account *</label>
+            <input type="text" name="name" required class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Email</label>
+            <input type="email" name="email" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Piattaforma *</label>
+            <select name="platform" required class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+              <option value="ps">PlayStation</option>
+              <option value="xbox">Xbox</option>
+              <option value="pc">PC</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Saldo Crediti</label>
+            <input type="number" name="coin_balance" value="0" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Limite Giornaliero</label>
+            <input type="number" name="daily_limit" value="5000000" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+          </div>
+          <div class="flex gap-2 justify-end">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 border border-gray-600 rounded">Annulla</button>
+            <button type="submit" class="px-4 py-2 bg-blue-600 rounded">Salva</button>
+          </div>
+        </form>
+      `;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    // Add account
+    async function addAccount(e) {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      const data = Object.fromEntries(form);
+      data.coin_balance = parseInt(data.coin_balance) || 0;
+      data.daily_limit = parseInt(data.daily_limit) || 5000000;
+      
+      await fetch(`${API}/api/accounts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      closeModal();
+      loadAccounts();
+    }
+
+    // Edit account
+    async function editAccount(id) {
+      const res = await fetch(`${API}/api/accounts`);
+      const accounts = await res.json();
+      const account = accounts.find(a => a.id === id);
+      
+      const modal = document.getElementById('modal');
+      document.getElementById('modal-content').innerHTML = `
+        <h3 class="font-semibold text-lg mb-4">Modifica Account</h3>
+        <form onsubmit="updateAccount(event, ${id})" class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Nome Account *</label>
+            <input type="text" name="name" value="${account.name}" required class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Email</label>
+            <input type="email" name="email" value="${account.email || ''}" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Piattaforma *</label>
+            <select name="platform" required class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+              <option value="ps" ${account.platform === 'ps' ? 'selected' : ''}>PlayStation</option>
+              <option value="xbox" ${account.platform === 'xbox' ? 'selected' : ''}>Xbox</option>
+              <option value="pc" ${account.platform === 'pc' ? 'selected' : ''}>PC</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Saldo Crediti</label>
+            <input type="number" name="coin_balance" value="${account.coin_balance}" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Limite Giornaliero</label>
+            <input type="number" name="daily_limit" value="${account.daily_limit}" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+          </div>
+          <div>
+            <label class="flex items-center gap-2">
+              <input type="checkbox" name="is_active" ${account.is_active ? 'checked' : ''}>
+              <span class="text-sm">Account Attivo</span>
+            </label>
+          </div>
+          <div class="flex gap-2 justify-end">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 border border-gray-600 rounded">Annulla</button>
+            <button type="submit" class="px-4 py-2 bg-blue-600 rounded">Salva</button>
+          </div>
+        </form>
+      `;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    // Update account
+    async function updateAccount(e, id) {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      const data = Object.fromEntries(form);
+      data.coin_balance = parseInt(data.coin_balance) || 0;
+      data.daily_limit = parseInt(data.daily_limit) || 5000000;
+      data.is_active = form.has('is_active');
+      
+      await fetch(`${API}/api/accounts/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      closeModal();
+      loadAccounts();
+    }
+
+    // Delete account
+    async function deleteAccount(id) {
+      if (!confirm('Eliminare questo account?')) return;
+      await fetch(`${API}/api/accounts/${id}`, { method: 'DELETE' });
+      loadAccounts();
+    }
+
+    // Order actions
+    function showOrderActions(id, currentStatus) {
+      const modal = document.getElementById('modal');
+      document.getElementById('modal-content').innerHTML = `
+        <h3 class="font-semibold text-lg mb-4">Gestisci Ordine</h3>
+        <form onsubmit="updateOrderStatus(event, ${id})" class="space-y-4">
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Stato</label>
+            <select name="status" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+              <option value="pending" ${currentStatus === 'pending' ? 'selected' : ''}>In attesa</option>
+              <option value="processing" ${currentStatus === 'processing' ? 'selected' : ''}>In lavorazione</option>
+              <option value="completed" ${currentStatus === 'completed' ? 'selected' : ''}>Completato</option>
+              <option value="cancelled" ${currentStatus === 'cancelled' ? 'selected' : ''}>Annullato</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Carta Usata per Transfer</label>
+            <input type="text" name="transfer_card_name" placeholder="Es. Bronze - GK - Serie B" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-sm text-gray-400 mb-1">Prezzo Listing</label>
+            <input type="number" name="listing_price" placeholder="Es. 1000000" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2">
+          </div>
+          <div class="flex gap-2 justify-end">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 border border-gray-600 rounded">Annulla</button>
+            <button type="submit" class="px-4 py-2 bg-blue-600 rounded">Aggiorna</button>
+          </div>
+        </form>
+      `;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    // Update order status
+    async function updateOrderStatus(e, id) {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      const data = Object.fromEntries(form);
+      if (data.listing_price) data.listing_price = parseInt(data.listing_price);
+      
+      await fetch(`${API}/api/orders/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      closeModal();
+      loadOrders();
+      loadStats();
+    }
+
+    // Reset daily
+    async function resetDaily() {
+      if (!confirm('Azzerare i contatori giornalieri di tutti gli account?')) return;
+      await fetch(`${API}/api/reset-daily`, { method: 'POST' });
+      alert('Contatori azzerati!');
+      loadAccounts();
+    }
+
+    // Helpers
+    function closeModal() {
+      const modal = document.getElementById('modal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function formatCoins(n) {
+      if (!n) return '0';
+      if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+      if (n >= 1000) return (n / 1000).toFixed(0) + 'K';
+      return n.toString();
+    }
+
+    function getPlatformClass(p) {
+      const classes = {
+        ps: 'bg-blue-900 text-blue-300',
+        xbox: 'bg-green-900 text-green-300',
+        pc: 'bg-purple-900 text-purple-300'
+      };
+      return classes[p] || 'bg-gray-700';
+    }
+
+    function getStatusClass(s) {
+      const classes = {
+        pending: 'bg-yellow-900 text-yellow-300',
+        processing: 'bg-blue-900 text-blue-300',
+        completed: 'bg-green-900 text-green-300',
+        cancelled: 'bg-red-900 text-red-300'
+      };
+      return classes[s] || 'bg-gray-700';
+    }
+
+    function getStatusLabel(s) {
+      const labels = {
+        pending: 'In attesa',
+        processing: 'In lavorazione',
+        completed: 'Completato',
+        cancelled: 'Annullato'
+      };
+      return labels[s] || s;
+    }
+
+    // Update datetime
+    function updateDateTime() {
+      document.getElementById('datetime').textContent = new Date().toLocaleString('it-IT');
+    }
+    setInterval(updateDateTime, 1000);
+    updateDateTime();
+
+    // Init
+    showTab('dashboard');
+  </script>
+</body>
+</html>

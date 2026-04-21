@@ -1,180 +1,263 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <title>FUT Orders – Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF overflow-hidden">  <meta charset="UTF-8" />
+            <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+              <h2 class="text-lg font-semibold">Lista account</h2>
+              <input id="accountSearch" placeholder="Cerca..." class="input max-w-xs" oninput="renderAccounts()" />
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-950 text-slate-400">
+                  <tr>
+                    <th class="px-4 py-3 text-left">Nome</th>
+                    <th class="px-4 py-3 text-left">Piattaforma</th>
+                    <th class="px-4 py-3 text-right">Disponibilità</th>
+                    <th class="px-4 py-3 text-center">Stato</th>
+                    <th class="px-4 py-3 text-right">Azioni</th>
+                  </tr>
+                </thead>
+                <tbody id="accountsTable" class="divide-y divide-slate-800"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ORDERS -->
+        <section id="view-orders" class="view hidden space-y-6">
+          <div class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+            <h2 class="text-lg font-semibold mb-4">Nuovo ordine</h2>
+            <form id="orderForm" class="grid grid-cols-1 md:grid-cols-6 gap-4">
+              <input name="customer_name" required placeholder="Cliente" class="input" />
+              <input name="customer_contact" placeholder="Contatto" class="input" />
+              <select name="platform" required class="input">
+                <option value="">Piattaforma</option>
+                <option value="ps">PlayStation</option>
+                <option value="xbox">Xbox</option>
+                <option value="pc">PC</option>
+              </select>
+              <input name="quantity" type="number" min="1" required placeholder="Quantità" class="input" />
+              <input name="price_eur" type="number" step="0.01" min="0" placeholder="Prezzo €" class="input" />
+              <button type="submit" class="btn-primary">Crea ordine</button>
+              <textarea name="notes" rows="3" placeholder="Note" class="input md:col-span-6"></textarea>
+            </form>
+          </div>
+
+          <div class="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
+            <div class="p-5 border-b border-slate-800 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <h2 class="text-lg font-semibold">Ordini</h2>
+              <div class="flex gap-3">
+                <input id="orderSearch" placeholder="Cerca..." class="input max-w-xs" oninput="renderOrders()" />
+                <select id="orderStatusFilter" class="input max-w-xs" onchange="renderOrders()">
+                  <option value="">Tutti gli stati</option>
+                  <option value="pending">pending</option>
+                  <option value="waiting_stock">waiting_stock</option>
+                  <option value="in_progress">in_progress</option>
+                  <option value="completed">completed</option>
+                  <option value="cancelled">cancelled</option>
+                </select>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-950 text-slate-400">
+                  <tr>
+                    <th class="px-4 py-3 text-left">Codice</th>
+                    <th class="px-4 py-3 text-left">Cliente</th>
+                    <th class="px-4 py-3 text-left">Piattaforma</th>
+                    <th class="px-4 py-3 text-right">Quantità</th>
+                    <th class="px-4 py-3 text-right">Prezzo</th>
+                    <th class="px-4 py-3 text-left">Account</th>
+                    <th class="px-4 py-3 text-left">Stato</th>
+                    <th class="px-4 py-3 text-right">Azioni</th>
+                  </tr>
+                </thead>
+                <tbody id="ordersTable" class="divide-y divide-slate-800"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- REQUESTS -->
+        <section id="view-requests" class="view hidden space-y-6">
+          <div class="rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden">
+            <div class="p-5 border-b border-slate-800 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <h2 class="text-lg font-semibold">Richieste pubbliche</h2>
+              <div class="flex gap-3">
+                <input id="requestSearch" placeholder="Cerca..." class="input max-w-xs" oninput="renderReservations()" />
+                <select id="requestStatusFilter" class="input max-w-xs" onchange="renderReservations()">
+                  <option value="">Tutti gli stati</option>
+                  <option value="new">new</option>
+                  <option value="contacted">contacted</option>
+                  <option value="confirmed">confirmed</option>
+                  <option value="converted">converted</option>
+                  <option value="closed">closed</option>
+                </select>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-950 text-slate-400">
+                  <tr>
+                    <th class="px-4 py-3 text-left">ID</th>
+                    <th class="px-4 py-3 text-left">Cliente</th>
+                    <th class="px-4 py-3 text-left">Contatto</th>
+                    <th class="px-4 py-3 text-left">Piattaforma</th>
+                    <th class="px-4 py-3 text-right">Quantità</th>
+                    <th class="px-4 py-3 text-left">Stato</th>
+                    <th class="px-4 py-3 text-right">Azioni</th>
+                  </tr>
+                </thead>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FUT Orders – Admin</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
+<body class="bg-slate-950 text-slate-100">
 
-<body class="bg-gray-900 text-gray-100">
-
-<!-- Header -->
-<header class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center">
-  <h1 class="text-xl font-bold text-emerald-400">⚽ FUT Orders</h1>
-  <span class="text-sm text-gray-400">Dashboard Admin</span>
-</header>
-
-<!-- Layout -->
-<div class="flex">
-
-  <!-- Sidebar -->
-  <aside class="w-64 bg-gray-800 border-r border-gray-700 min-h-screen p-4">
-    <nav class="space-y-2">
-      <button onclick="showTab('dashboard')" class="nav-btn">📊 Dashboard</button>
-      <button onclick="showTab('accounts')" class="nav-btn">👤 Accounts</button>
-      <button onclick="showTab('orders')" class="nav-btn">📦 Ordini</button>
-    </nav>
-  </aside>
-
-  <!-- Content -->
-  <main class="flex-1 p-6">
-
-    <!-- DASHBOARD -->
-    <section id="dashboard" class="tab">
-      <h2 class="text-2xl font-semibold mb-6">Dashboard</h2>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        <div class="card">
-          <div class="label">Account attivi</div>
-          <div id="stat-accounts" class="value">-</div>
-        </div>
-        <div class="card">
-          <div class="label">Ordini totali</div>
-          <div id="stat-orders" class="value">-</div>
-        </div>
-        <div class="card">
-          <div class="label">Ordini in attesa</div>
-          <div id="stat-pending" class="value">-</div>
-        </div>
+  <!-- LOGIN -->
+  <div id="loginView" class="min-h-screen flex items-center justify-center px-4">
+    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl">
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold text-emerald-400 mb-2">Dashboard Admin</h1>
+        <p class="text-slate-400 text-sm">Inserisci la password per accedere</p>
       </div>
-    </section>
 
-    <!-- ACCOUNTS -->
-    <section id="accounts" class="tab hidden">
-      <h2 class="text-2xl font-semibold mb-6">Accounts</h2>
-      <div class="bg-gray-800 rounded-xl overflow-hidden">
-        <table class="w-full">
-          <thead class="bg-gray-700 text-gray-300 text-sm">
-            <tr>
-              <th class="px-4 py-3 text-left">Nome</th>
-              <th class="px-4 py-3 text-left">Piattaforma</th>
-              <th class="px-4 py-3 text-right">Crediti</th>
-              <th class="px-4 py-3 text-center">Stato</th>
-            </tr>
-          </thead>
-          <tbody id="accounts-table" class="divide-y divide-gray-700"></tbody>
-        </table>
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label class="block text-sm text-slate-400 mb-2">Password</label>
+          <input
+            type="password"
+            name="password"
+            required
+            class="w-full rounded-xl bg-slate-800 border border-slate-700 px-4 py-3 outline-none focus:border-emerald-500"
+            placeholder="Password admin"
+          />
+        </div>
+
+        <button
+          type="submit"
+          class="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-semibold py-3"
+        >
+          Accedi
+        </button>
+      </form>
+
+      <div id="loginError" class="hidden mt-4 rounded-xl bg-red-900/60 border border-red-800 text-red-200 px-4 py-3 text-sm"></div>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div id="appView" class="hidden min-h-screen">
+    <!-- Header -->
+    <header class="h-16 border-b border-slate-800 bg-slate-900 px-6 flex items-center justify-between">
+      <div>
+        <h1 class="text-xl font-bold text-emerald-400">⚡ FUT Orders – Control Panel</h1>
       </div>
-    </section>
-
-    <!-- ORDERS -->
-    <section id="orders" class="tab hidden">
-      <h2 class="text-2xl font-semibold mb-6">Ordini</h2>
-      <div class="bg-gray-800 rounded-xl overflow-hidden">
-        <table class="w-full">
-          <thead class="bg-gray-700 text-gray-300 text-sm">
-            <tr>
-              <th class="px-4 py-3 text-left">Codice</th>
-              <th class="px-4 py-3 text-left">Cliente</th>
-              <th class="px-4 py-3 text-left">Piattaforma</th>
-              <th class="px-4 py-3 text-right">Crediti</th>
-              <th class="px-4 py-3 text-center">Stato</th>
-            </tr>
-          </thead>
-          <tbody id="orders-table" class="divide-y divide-gray-700"></tbody>
-        </table>
+      <div class="flex items-center gap-3">
+        <button
+          onclick="refreshAll()"
+          class="rounded-xl border border-slate-700 px-4 py-2 text-sm hover:bg-slate-800"
+        >
+          Aggiorna
+        </button>
+        <button
+          onclick="logout()"
+          class="rounded-xl bg-red-500 hover:bg-red-600 px-4 py-2 text-sm font-semibold text-white"
+        >
+          Esci
+        </button>
       </div>
-    </section>
+    </header>
 
-  </main>
-</div>
+    <div class="flex">
+      <!-- Sidebar -->
+      <aside class="w-72 min-h-[calc(100vh-64px)] border-r border-slate-800 bg-slate-900 p-4">
+        <nav class="space-y-2">
+          <button class="nav-btn" data-view="dashboard" onclick="showView('dashboard')">📊 Dashboard</button>
+          <button class="nav-btn" data-view="accounts" onclick="showView('accounts')">👤 Accounts</button>
+          <button class="nav-btn" data-view="orders" onclick="showView('orders')">📦 Ordini</button>
+          <button class="nav-btn" data-view="requests" onclick="showView('requests')">📝 Richieste</button>
+          <button class="nav-btn" data-view="activity" onclick="showView('activity')">🕘 Attività</button>
+        </nav>
 
-<!-- Styles -->
-<style>
-  .nav-btn {
-    width: 100%;
-    text-align: left;
-    padding: 10px 12px;
-    border-radius: 8px;
-    background: transparent;
-    color: #d1d5db;
-  }
-  .nav-btn:hover {
-    background: #1f2937;
-  }
-  .card {
-    background: #1f2937;
-    padding: 24px;
-    border-radius: 16px;
-  }
-  .label {
-    color: #9ca3af;
-    font-size: 14px;
-    margin-bottom: 8px;
-  }
-  .value {
-    font-size: 32px;
-    font-weight: bold;
-    color: #34d399;
-  }
-</style>
+        <div class="mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-4">
+          <div class="text-sm text-slate-400 mb-2">Pagina pubblica richieste</div>
+          <a
+            href="/request"
+            target="_blank"
+            class="text-emerald-400 text-sm underline break-all"
+          >/request</a>
+        </div>
+      </aside>
 
-<!-- Scripts -->
-<script>
-function showTab(id) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.add('hidden'));
-  document.getElementById(id).classList.remove('hidden');
+      <!-- Content -->
+      <main class="flex-1 p-6 space-y-6">
+        <!-- DASHBOARD -->
+        <section id="view-dashboard" class="view space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+            <div class="card">
+              <div class="label">Account attivi</div>
+              <div id="kpi-activeAccounts" class="value">0</div>
+            </div>
+            <div class="card">
+              <div class="label">Disponibilità totale</div>
+              <div id="kpi-totalInventory" class="value">0</div>
+            </div>
+            <div class="card">
+              <div class="label">Ordini aperti</div>
+              <div id="kpi-openOrders" class="value">0</div>
+            </div>
+            <div class="card">
+              <div class="label">Richieste nuove</div>
+              <div id="kpi-newReservations" class="value">0</div>
+            </div>
+            <div class="card">
+              <div class="label">Valore completato</div>
+              <div id="kpi-revenue" class="value">€0,00</div>
+            </div>
+          </div>
 
-  if (id === 'dashboard') loadStats();
-  if (id === 'accounts') loadAccounts();
-  if (id === 'orders') loadOrders();
-}
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="xl:col-span-2 rounded-2xl border border-slate-800 bg-slate-900 p-5">
+              <h2 class="text-lg font-semibold mb-4">Disponibilità per piattaforma</h2>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="rounded-2xl bg-slate-950 border border-slate-800 p-4">
+                  <div class="text-slate-400 text-sm mb-2">PlayStation</div>
+                  <div id="plat-ps" class="text-2xl font-bold text-emerald-400">0</div>
+                </div>
+                <div class="rounded-2xl bg-slate-950 border border-slate-800 p-4">
+                  <div class="text-slate-400 text-sm mb-2">Xbox</div>
+                  <div id="plat-xbox" class="text-2xl font-bold text-emerald-400">0</div>
+                </div>
+                <div class="rounded-2xl bg-slate-950 border border-slate-800 p-4">
+                  <div class="text-slate-400 text-sm mb-2">PC</div>
+                  <div id="plat-pc" class="text-2xl font-bold text-emerald-400">0</div>
+                </div>
+              </div>
+            </div>
 
-async function loadStats() {
-  const res = await fetch('/api/stats');
-  const d = await res.json();
-  document.getElementById('stat-accounts').textContent = d.accounts;
-  document.getElementById('stat-orders').textContent = d.orders;
-  document.getElementById('stat-pending').textContent = d.pending;
-}
+            <div class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+              <h2 class="text-lg font-semibold mb-4">Ultime attività</h2>
+              <div id="latestActivity" class="space-y-3 text-sm text-slate-300"></div>
+            </div>
+          </div>
+        </section>
 
-async function loadAccounts() {
-  const res = await fetch('/api/accounts');
-  const data = await res.json();
-  const tbody = document.getElementById('accounts-table');
-  tbody.innerHTML = data.map(a => `
-    <tr>
-      <td class="px-4 py-3">${a.name}</td>
-      <td class="px-4 py-3 uppercase">${a.platform}</td>
-      <td class="px-4 py-3 text-right">${a.coin_balance.toLocaleString()}</td>
-      <td class="px-4 py-3 text-center">
-        <span class="px-2 py-1 rounded text-xs ${a.is_active ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}">
-          ${a.is_active ? 'Attivo' : 'Inattivo'}
-        </span>
-      </td>
-    </tr>
-  `).join('');
-}
+        <!-- ACCOUNTS -->
+        <section id="view-accounts" class="view hidden space-y-6">
+          <div class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+            <h2 class="text-lg font-semibold mb-4">Nuovo account</h2>
+            <form id="accountForm" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <input name="name" required placeholder="Nome account" class="input" />
+              <select name="platform" required class="input">
+                <option value="">Piattaforma</option>
+                <option value="ps">PlayStation</option>
+                <option value="xbox">Xbox</option>
+                <option value="pc">PC</option>
+              </select>
+              <input name="coin_balance" type="number" min="0" placeholder="Disponibilità" class="input" />
+              <button type="submit" class="btn-primary">Salva account</button>
+            </form>
+          </div>
 
-async function loadOrders() {
-  const res = await fetch('/api/orders');
-  const data = await res.json();
-  const tbody = document.getElementById('orders-table');
-  tbody.innerHTML = data.map(o => `
-    <tr>
-      <td class="px-4 py-3 font-mono">${o.order_code}</td>
-      <td class="px-4 py-3">${o.customer_name}</td>
-      <td class="px-4 py-3 uppercase">${o.platform}</td>
-      <td class="px-4 py-3 text-right">${o.coins.toLocaleString()}</td>
-      <td class="px-4 py-3 text-center">${o.status}</td>
-    </tr>
-  `).join('');
-}
-
-// init
-showTab('dashboard');
-</script>
-
-</body>
-</html>

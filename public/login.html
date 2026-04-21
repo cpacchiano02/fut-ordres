@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+</head>
+<body style="background:#111;color:#fff;font-family:Arial;padding:40px">
+  <h2>Admin Login</h2>
+  <input id="pw" type="password" placeholder="Password">
+  <button onclick="go()">Entra</button>
+
+<script>
+function go(){
+  localStorage.setItem('pw', document.getElementById('pw').value);
+  location.href='/dashboard';
+}
+</script>
+</body>
+</html>

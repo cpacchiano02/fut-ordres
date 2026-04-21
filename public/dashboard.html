@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+</head>
+<body style="background:#111;color:#fff;font-family:Arial;padding:30px">
+<h1>Dashboard</h1>
+
+<button onclick="load()">Aggiorna</button>
+<button onclick="exportCSV()">Export CSV</button>
+
+<pre id="out"></pre>
+
+<script>
+const pw = localStorage.getItem('pw');
+
+async function load(){
+  const res = await fetch('/api/requests',{
+    headers:{'x-admin-password':pw}
+  });
+  document.getElementById('out').textContent =
+    JSON.stringify(await res.json(),null,2);
+}
+
+function exportCSV(){
+  window.open('/api/export/requests','_blank');
+}
+
+load();
+</script>
+</body>
+</html>

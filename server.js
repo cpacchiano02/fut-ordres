@@ -115,6 +115,17 @@ app.post('/api/reservations/:id/create-order', auth, (req, res) => {
   res.json({ success: true });
 });
 
+// ---------------- LOGIN ----------------
+app.post('/api/login', (req, res) => {
+  const { password } = req.body;
+
+  if (password === ADMIN_PASSWORD) {
+    return res.json({ success: true });
+  }
+
+  res.status(401).json({ error: 'Password errata' });
+});
+
 // ---------------- START ----------------
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {

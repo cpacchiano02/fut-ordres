@@ -55,3 +55,68 @@ app.get('/', (req, res) => {
 // STATS
 app.get('/api/stats', auth, (req, res) => {
   res.json({
+    orders: db.prepare('SELECT COUNT(*) c FROM orders').get().c,
+    pending: db.prepare("SELECT COUNT(*) c FROM orders WHERE status='pending'").get().c,
+    reservations: db.prepare("SELECT COUNT(*) c FROM reservations WHERE status='new'").get().c
+  });
+});
+
+// ORDERS
+app.get('/api/orders', auth, (req, res) => {
+  res.json(db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all());
+});
+
+app.post('/api/orders', auth, (req, res) => {
+  const { customer_name, platform, coins } = req.body;
+  db.prepare(`
+    INSERT INTO orders (order_code, customer_name, platform, coins)
+    VALUES (?, ?, ?, ?)
+  `).run(genCode(), customer_name, platform, coins);
+  res.json({ success: true });
+});
+
+app.put('/api/orders/:id/status', auth, (req, res) => {
+  db.prepare(
+    'UPDATE orders SET status=? WHERE id=?'
+  ).run(req.body.status, req.params.id);
+  res.json({ success: true });
+});
+
+// RESERVATIONS
+app.get('/api/reservations', auth, (req, res) => {
+  res.json(db.prepare('SELECT * FROM reservations ORDER BY created_at DESC').all());
+});
+
+app.post('/api/reservations', (req, res) => {
+  const { customer_name, contact, platform, quantity } = req.body;
+  db.prepare(`
+    INSERT INTO reservations (customer_name, contact, platform, quantity)
+    VALUES (?, ?, ?, ?)
+  `).run(customer_name, contact, platform, quantity);
+  res.json({ success: true });
+});
+
+app.post('/api/reservations/:id/create-order', auth, (req, res) => {
+  const r = db.prepare(
+    'SELECT * FROM reservations WHERE id=?'
+  ).get(req.params.id);
+
+  if (!r) return res.status(404).json({ error: 'Not found' });
+
+  db.prepare(`
+    INSERT INTO orders (order_code, customer_name, platform, coins)
+    VALUES (?, ?, ?, ?)
+  `).run(genCode(), r.customer_name, r.platform, r.quantity);
+
+  db.prepare(
+    'UPDATE reservations SET status="confirmed" WHERE id=?'
+  ).run(req.params.id);
+
+  res.json({ success: true });
+});
+
+// ---------------- START ----------------
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+  console.log('✅ Server running on port', PORT);
+});

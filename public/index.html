@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>FUT Orders</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://cdn.tailwindcss.com"></script>
+  https://cdn.tailwindcss.comscript>
 </head>
 
 <body class="bg-gray-900 text-white min-h-screen">
@@ -34,9 +34,9 @@
 
 <!-- MENU -->
 <aside class="w-60 bg-gray-800 p-4 space-y-2">
-  <button class="menu" onclick="show('dashboard')">📊 Dashboard</button>
-  <button class="menu" onclick="show('orders')">📦 Ordini</button>
-  <button class="menu" onclick="show('requests')">📥 Richieste</button>
+  <button class="menu" onclick="showView('dashboard')">📊 Dashboard</button>
+  <button class="menu" onclick="showView('orders')">📦 Ordini</button>
+  <button class="menu" onclick="showView('requests')">📥 Richieste</button>
 </aside>
 
 <!-- CONTENT -->
@@ -46,9 +46,9 @@
 <div id="dashboard" class="view">
   <h2 class="text-xl font-semibold mb-4">Dashboard</h2>
   <div class="grid grid-cols-3 gap-4">
-    <div class="card">Ordini<br><span id="s-orders">-</span></div>
-    <div class="card">Pending<br><span id="s-pending">-</span></div>
-    <div class="card">Richieste<br><span id="s-req">-</span></div>
+    <div class="card">Ordini<br><span id="stat-orders">-</span></div>
+    <div class="card">Pending<br><span id="stat-pending">-</span></div>
+    <div class="card">Richieste<br><span id="stat-requests">-</span></div>
   </div>
 </div>
 
@@ -77,51 +77,52 @@
 </style>
 
 <script>
-const pwKey='pw';
+const PW_KEY = 'admin_pw';
 
 function doLogin(){
-  localStorage.setItem(pwKey,password.value);
+  localStorage.setItem(PW_KEY, document.getElementById('password').value);
   init();
 }
 
 function logout(){
-  localStorage.removeItem(pwKey);
+  localStorage.removeItem(PW_KEY);
   location.reload();
 }
 
-function show(id){
-  document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
+function showView(id){
+  document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
-  if(id==='orders')loadOrders();
-  if(id==='requests')loadRequests();
+
+  if(id==='orders') loadOrders();
+  if(id==='requests') loadRequests();
 }
 
-async function api(url,method='GET',body){
-  return fetch(url,{
+async function api(url, method='GET', body){
+  return fetch(url, {
     method,
-    headers:{
-      'Content-Type':'application/json',
-      'x-admin-password':localStorage.getItem(pwKey)
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-password': localStorage.getItem(PW_KEY)
     },
-    body:body?JSON.stringify(body):undefined
-  }).then(r=>r.json());
+    body: body ? JSON.stringify(body) : undefined
+  }).then(r => r.json());
 }
 
 async function loadStats(){
   const s = await api('/api/stats');
-  s-orders.textContent=s.orders;
-  s-pending.textContent=s.pending;
-  s-req.textContent=s.reservations;
+  document.getElementById('stat-orders').textContent = s.orders;
+  document.getElementById('stat-pending').textContent = s.pending;
+  document.getElementById('stat-requests').textContent = s.reservations;
 }
 
 async function loadOrders(){
   const data = await api('/api/orders');
-  ordersList.innerHTML = data.map(o=>`
+  document.getElementById('ordersList').innerHTML = data.map(o => `
     <div class="bg-gray-800 p-3 mb-2 rounded">
       <b>${o.order_code}</b> – ${o.customer_name} – ${o.status}
       <div class="mt-2">
-        ${['pending','processing','completed'].map(s=>`
-          <button onclick="setOrder(${o.id},'${s}')" class="px-2 py-1 bg-emerald-600 mr-1">${s}</button>
+        ${['pending','processing','completed'].map(s => `
+          <button onclick="setOrder(${o.id}, '${s}')" class="px-2 py-1 bg-emerald-600 mr-1">${s}</button>
         `).join('')}
       </div>
     </div>
@@ -130,35 +131,40 @@ async function loadOrders(){
 
 async function setOrder(id,status){
   await api('/api/orders/'+id+'/status','PUT',{status});
-  loadOrders(); loadStats();
+  loadOrders();
+  loadStats();
 }
 
 async function loadRequests(){
   const data = await api('/api/reservations');
-  requestsList.innerHTML = data.map(r=>`
+  document.getElementById('requestsList').innerHTML = data.map(r => `
     <div class="bg-gray-800 p-3 mb-2 rounded">
       <b>${r.customer_name}</b> (${r.platform}) – ${r.status}
       <div class="mt-2">
-        ${['new','contacted','confirmed','closed'].map(s=>`
-          <button onclick="setReq(${r.id},'${s}')" class="px-2 py-1 bg-blue-600 mr-1">${s}</button>
+        ${['new','contacted','confirmed','closed'].map(s => `
+          <button onclick="setRequest(${r.id}, '${s}')" class="px-2 py-1 bg-blue-600 mr-1">${s}</button>
         `).join('')}
       </div>
     </div>
   `).join('');
 }
 
-async function setReq(id,status){
+async function setRequest(id,status){
   await api('/api/reservations/'+id+'/status','PUT',{status});
-  loadRequests(); loadStats();
+  loadRequests();
+  loadStats();
 }
 
 function init(){
-  if(localStorage.getItem(pwKey)){
-    login.classList.add('hidden');
-    app.classList.remove('hidden');
+  if(localStorage.getItem(PW_KEY)){
+    document.getElementById('login').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
     loadStats();
   }
 }
+
 init();
 </script>
 
+</body>
+</html>

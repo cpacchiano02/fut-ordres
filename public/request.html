@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Invia richiesta</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-slate-950 text-white min-h-screen">
+
+  <div class="min-h-screen flex items-center justify-center px-4 py-10">
+    <div class="w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-8">
+
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-emerald-400 mb-2">
+          Invia una richiesta
+        </h1>
+        <p class="text-slate-400">
+          Compila il modulo qui sotto. La richiesta verrà registrata e gestita dalla dashboard.
+        </p>
+      </div>
+
+      <form id="requestForm" class="space-y-5">
+        <div>
+          <label class="block text-sm text-slate-400 mb-2">Nome</label>
+          <input
+            id="customer_name"
+            type="text"
+            placeholder="Inserisci il tuo nome"
+            class="w-full rounded-xl bg-slate-800 border border-slate-700 px-4 py-3 outline-none focus:border-emerald-500"
+            required
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm text-slate-400 mb-2">Contatto</label>
+          <input
+            id="contact"
+            type="text"
+            placeholder="WhatsApp, Telegram o email"
+            class="w-full rounded-xl bg-slate-800 border border-slate-700 px-4 py-3 outline-none focus:border-emerald-500"
+            required
+          />
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <label class="block text-sm text-slate-400 mb-2">Piattaforma</label>
+            <select
+              id="platform"
+              class="w-full rounded-xl bg-slate-800 border border-slate-700 px-4 py-3 outline-none focus:border-emerald-500"
+              required
+            >
+              <option value="">Seleziona una piattaforma</option>
+              <option value="ps">PlayStation</option>
+              <option value="xbox">Xbox</option>
+              <option value="pc">PC</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm text-slate-400 mb-2">Quantità</label>
+            <input
+              id="quantity"
+              type="number"
+              min="1"
+              placeholder="Es. 1"
+              class="w-full rounded-xl bg-slate-800 border border-slate-700 px-4 py-3 outline-none focus:border-emerald-500"
+              required
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold py-3 rounded-xl transition"
+        >
+          Invia richiesta
+        </button>
+      </form>
+
+      <div id="successBox" class="hidden mt-6 rounded-xl border border-emerald-700 bg-emerald-900/40 p-4 text-emerald-300">
+        Richiesta inviata con successo.
+      </div>
+
+      <div id="errorBox" class="hidden mt-6 rounded-xl border border-red-700 bg-red-900/40 p-4 text-red-300">
+        Si è verificato un errore. Controlla i dati e riprova.
+      </div>
+
+      <div class="mt-8 text-center">
+        <a
+          href="/"
+          class="text-sm text-slate-400 hover:text-white"
+        >
+          Torna alla home
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('requestForm');
+    const successBox = document.getElementById('successBox');
+    const errorBox = document.getElementById('errorBox');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      successBox.classList.add('hidden');
+      errorBox.classList.add('hidden');
+
+      const customer_name = document.getElementById('customer_name').value.trim();
+      const contact = document.getElementById('contact').value.trim();
+      const platform = document.getElementById('platform').value;
+      const quantity = Number(document.getElementById('quantity').value);
+
+      if (!customer_name || !contact || !platform || !quantity) {
+        errorBox.textContent = 'Compila tutti i campi obbligatori.';
+        errorBox.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/reservations', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            customer_name,
+            contact,
+            platform,
+            quantity
+          })
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data.error || 'Errore durante il salvataggio');
+        }
+
+        form.reset();
+        successBox.classList.remove('hidden');
+      } catch (err) {
+        errorBox.textContent = err.message || 'Si è verificato un errore.';
+        errorBox.classList.remove('hidden');
+      }
+    });
+  </script>
+
+</body>
+</html>

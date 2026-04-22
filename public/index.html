@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <title>FUT Orders</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- ✅ TAILWIND CORRETTO -->
   https://cdn.tailwindcss.comscript>
 </head>
 
@@ -11,12 +13,20 @@
 
 <!-- LOGIN -->
 <section id="login" class="flex items-center justify-center min-h-screen">
-  <div class="bg-gray-800 p-8 rounded-xl w-full max-w-sm">
-    <h2 class="text-2xl font-bold mb-4 text-center">🔐 Login</h2>
-    <input id="password" type="password" placeholder="Password"
-      class="w-full mb-4 p-3 rounded bg-gray-700 outline-none">
-    <button onclick="doLogin()"
-      class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold py-2 rounded">
+  <div class="bg-gray-800 p-8 rounded-xl w-full max-w-sm shadow-lg">
+    <h2 class="text-2xl font-bold mb-6 text-center">🔐 Login</h2>
+
+    <input
+      id="password"
+      type="password"
+      placeholder="Password"
+      class="w-full mb-4 p-3 rounded bg-gray-700 outline-none focus:ring-2 focus:ring-emerald-500"
+    >
+
+    <button
+      onclick="doLogin()"
+      class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold py-2 rounded transition"
+    >
       Entra
     </button>
   </div>
@@ -25,15 +35,15 @@
 <!-- APP -->
 <section id="app" class="hidden">
 
-<header class="bg-gray-800 px-6 py-4 flex justify-between">
-  <h1 class="font-bold text-emerald-400">⚽ FUT Orders</h1>
-  <button onclick="logout()" class="text-sm text-gray-400">Logout</button>
+<header class="bg-gray-800 px-6 py-4 flex justify-between items-center border-b border-gray-700">
+  <h1 class="text-xl font-bold text-emerald-400">⚽ FUT Orders</h1>
+  <button onclick="logout()" class="text-sm text-gray-400 hover:text-white">Logout</button>
 </header>
 
 <div class="flex">
 
 <!-- MENU -->
-<aside class="w-60 bg-gray-800 p-4 space-y-2">
+<aside class="w-64 bg-gray-800 min-h-screen p-4 space-y-2 border-r border-gray-700">
   <button class="menu" onclick="showView('dashboard')">📊 Dashboard</button>
   <button class="menu" onclick="showView('orders')">📦 Ordini</button>
   <button class="menu" onclick="showView('requests')">📥 Richieste</button>
@@ -44,60 +54,93 @@
 
 <!-- DASHBOARD -->
 <div id="dashboard" class="view">
-  <h2 class="text-xl font-semibold mb-4">Dashboard</h2>
-  <div class="grid grid-cols-3 gap-4">
-    <div class="card">Ordini<br><span id="stat-orders">-</span></div>
-    <div class="card">Pending<br><span id="stat-pending">-</span></div>
-    <div class="card">Richieste<br><span id="stat-requests">-</span></div>
+  <h2 class="text-2xl font-semibold mb-6">Dashboard</h2>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="card">
+      <div class="label">Ordini totali</div>
+      <div id="stat-orders" class="value">-</div>
+    </div>
+
+    <div class="card">
+      <div class="label">Ordini pending</div>
+      <div id="stat-pending" class="value">-</div>
+    </div>
+
+    <div class="card">
+      <div class="label">Nuove richieste</div>
+      <div id="stat-requests" class="value">-</div>
+    </div>
   </div>
 </div>
 
 <!-- ORDERS -->
 <div id="orders" class="view hidden">
-  <h2 class="text-xl font-semibold mb-4">Ordini</h2>
-  <div id="ordersList"></div>
+  <h2 class="text-2xl font-semibold mb-4">📦 Ordini</h2>
+  <div id="ordersList" class="space-y-3"></div>
 </div>
 
 <!-- REQUESTS -->
 <div id="requests" class="view hidden">
-  <h2 class="text-xl font-semibold mb-4">Richieste</h2>
-  <div id="requestsList"></div>
+  <h2 class="text-2xl font-semibold mb-4">📥 Richieste</h2>
+  <div id="requestsList" class="space-y-3"></div>
 </div>
 
 </main>
 </div>
 </section>
 
+<!-- STILI -->
 <style>
-.menu{width:100%;text-align:left;padding:10px;border-radius:8px}
-.menu:hover{background:#1f2937}
-.card{background:#1f2937;padding:20px;border-radius:16px;font-size:18px}
-.view{animation:fade .2s}
-@keyframes fade{from{opacity:.7}to{opacity:1}}
+.menu {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: transparent;
+}
+.menu:hover {
+  background: #1f2937;
+}
+.card {
+  background: #1f2937;
+  padding: 24px;
+  border-radius: 16px;
+}
+.label {
+  color: #9ca3af;
+  margin-bottom: 6px;
+}
+.value {
+  font-size: 32px;
+  font-weight: bold;
+  color: #34d399;
+}
 </style>
 
+<!-- SCRIPT -->
 <script>
 const PW_KEY = 'admin_pw';
 
-function doLogin(){
+function doLogin() {
   localStorage.setItem(PW_KEY, document.getElementById('password').value);
   init();
 }
 
-function logout(){
+function logout() {
   localStorage.removeItem(PW_KEY);
   location.reload();
 }
 
-function showView(id){
+function showView(id) {
   document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
   document.getElementById(id).classList.remove('hidden');
 
-  if(id==='orders') loadOrders();
-  if(id==='requests') loadRequests();
+  if (id === 'orders') loadOrders();
+  if (id === 'requests') loadRequests();
 }
 
-async function api(url, method='GET', body){
+async function api(url, method = 'GET', body) {
   return fetch(url, {
     method,
     headers: {
@@ -108,55 +151,63 @@ async function api(url, method='GET', body){
   }).then(r => r.json());
 }
 
-async function loadStats(){
+async function loadStats() {
   const s = await api('/api/stats');
   document.getElementById('stat-orders').textContent = s.orders;
   document.getElementById('stat-pending').textContent = s.pending;
   document.getElementById('stat-requests').textContent = s.reservations;
 }
 
-async function loadOrders(){
+async function loadOrders() {
   const data = await api('/api/orders');
   document.getElementById('ordersList').innerHTML = data.map(o => `
-    <div class="bg-gray-800 p-3 mb-2 rounded">
-      <b>${o.order_code}</b> – ${o.customer_name} – ${o.status}
-      <div class="mt-2">
+    <div class="bg-gray-800 p-4 rounded-lg">
+      <div class="font-semibold">${o.order_code} – ${o.customer_name}</div>
+      <div class="text-sm text-gray-400 mb-2">Stato: ${o.status}</div>
+      <div class="space-x-2">
         ${['pending','processing','completed'].map(s => `
-          <button onclick="setOrder(${o.id}, '${s}')" class="px-2 py-1 bg-emerald-600 mr-1">${s}</button>
+          <button onclick="setOrder(${o.id}, '${s}')"
+            class="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-black text-sm">
+            ${s}
+          </button>
         `).join('')}
       </div>
     </div>
   `).join('');
 }
 
-async function setOrder(id,status){
-  await api('/api/orders/'+id+'/status','PUT',{status});
+async function setOrder(id, status) {
+  await api('/api/orders/' + id + '/status', 'PUT', { status });
   loadOrders();
   loadStats();
 }
 
-async function loadRequests(){
+async function loadRequests() {
   const data = await api('/api/reservations');
   document.getElementById('requestsList').innerHTML = data.map(r => `
-    <div class="bg-gray-800 p-3 mb-2 rounded">
-      <b>${r.customer_name}</b> (${r.platform}) – ${r.status}
-      <div class="mt-2">
+    <div class="bg-gray-800 p-4 rounded-lg">
+      <div class="font-semibold">${r.customer_name} (${r.platform})</div>
+      <div class="text-sm text-gray-400 mb-2">Stato: ${r.status}</div>
+      <div class="space-x-2">
         ${['new','contacted','confirmed','closed'].map(s => `
-          <button onclick="setRequest(${r.id}, '${s}')" class="px-2 py-1 bg-blue-600 mr-1">${s}</button>
+          <button onclick="setRequest(${r.id}, '${s}')"
+            class="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm">
+            ${s}
+          </button>
         `).join('')}
       </div>
     </div>
   `).join('');
 }
 
-async function setRequest(id,status){
-  await api('/api/reservations/'+id+'/status','PUT',{status});
+async function setRequest(id, status) {
+  await api('/api/reservations/' + id + '/status', 'PUT', { status });
   loadRequests();
   loadStats();
 }
 
-function init(){
-  if(localStorage.getItem(PW_KEY)){
+function init() {
+  if (localStorage.getItem(PW_KEY)) {
     document.getElementById('login').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
     loadStats();

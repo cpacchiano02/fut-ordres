@@ -1,90 +1,74 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <title>FUT Orders – Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
+<body class="bg-gray-900 text-white p-6">
 
-<body class="bg-gray-900 text-gray-100">
+<h1 class="text-2xl font-bold mb-6">Dashboard</h1>
 
-<header class="bg-gray-800 border-b border-gray-700 px-6 py-4 flex justify-between items-center">
-  <h1 class="text-xl font-bold text-emerald-400">⚽ FUT Orders</h1>
-  <span class="text-sm text-gray-400">Dashboard</span>
-</header>
+<section class="mb-10">
+  <h2 class="text-xl mb-3">📦 Ordini</h2>
+  <div id="orders"></div>
+</section>
 
-<div class="flex">
+<section>
+  <h2 class="text-xl mb-3">📥 Richieste</h2>
+  <div id="reservations"></div>
+</section>
 
-  <!-- Sidebar -->
-  <aside class="w-64 bg-gray-800 border-r border-gray-700 min-h-screen p-4">
-    <nav class="space-y-2">
-      <button onclick="showTab('dashboard')" class="nav">📊 Dashboard</button>
-      <button onclick="showTab('accounts')" class="nav">👤 Accounts</button>
-      <button onclick="showTab('orders')" class="nav">📦 Ordini</button>
-    </nav>
-  </aside>
+<script>
+const pw = localStorage.getItem('pw');
 
-  <!-- Content -->
-  <main class="flex-1 p-6">
+async function load() {
+  const orders = await fetch('/api/orders',{headers:{'x-admin-password':pw}}).then(r=>r.json());
+  const resv = await fetch('/api/reservations',{headers:{'x-admin-password':pw}}).then(r=>r.json());
 
-    <!-- DASHBOARD -->
-    <section id="dashboard" class="tab">
-      <h2 class="text-2xl font-semibold mb-6">Dashboard</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="card">
-          <div class="label">Account</div>
-          <div id="stat-accounts" class="value">-</div>
-        </div>
-        <div class="card">
-          <div class="label">Ordini</div>
-          <div id="stat-orders" class="value">-</div>
-        </div>
-        <div class="card">
-          <div class="label">In attesa</div>
-          <div id="stat-pending" class="value">-</div>
-        </div>
+  ordersDiv.innerHTML = orders.map(o=>`
+    <div class="mb-2 p-3 bg-gray-800 rounded">
+      <b>${o.order_code}</b> – ${o.customer_name} – ${o.status}
+      <div class="mt-2">
+        ${['pending','processing','completed'].map(s=>`
+          <button onclick="setOrder(${o.id},'${s}')" class="px-2 py-1 mr-1 bg-emerald-600">${s}</button>
+        `).join('')}
       </div>
-    </section>
+    </div>
+  `).join('');
 
-    <!-- ACCOUNTS -->
-    <section id="accounts" class="tab hidden">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-semibold">Accounts</h2>
-        <button onclick="toggleAccountForm()" class="btn">+ Aggiungi account</button>
+  reservations.innerHTML = resv.map(r=>`
+    <div class="mb-2 p-3 bg-gray-800 rounded">
+      <b>${r.customer_name}</b> (${r.platform}) – ${r.status}
+      <div class="mt-2">
+        ${['new','contacted','confirmed','closed'].map(s=>`
+          <button onclick="setRes(${r.id},'${s}')" class="px-2 py-1 mr-1 bg-blue-600">${s}</button>
+        `).join('')}
       </div>
+    </div>
+  `).join('');
+}
 
-      <!-- FORM -->
-      <div id="account-form" class="hidden bg-gray-800 p-4 rounded-xl mb-6">
-        <input id="acc-name" placeholder="Nome account" class="input" />
-        <select id="acc-platform" class="input mt-2">
-          <option value="ps">PlayStation</option>
-          <option value="xbox">Xbox</option>
-          <option value="pc">PC</option>
-        </select>
-        <input id="acc-coins" type="number" placeholder="Crediti" class="input mt-2" />
-        <button onclick="createAccount()" class="btn mt-3">Salva</button>
-      </div>
+async function setOrder(id,status){
+  await fetch('/api/orders/'+id+'/status',{
+    method:'PUT',
+    headers:{'Content-Type':'application/json','x-admin-password':pw},
+    body:JSON.stringify({status})
+  });
+  load();
+}
 
-      <table class="w-full bg-gray-800 rounded-xl overflow-hidden">
-        <thead class="bg-gray-700">
-          <tr>
-            <th class="th">Nome</th>
-            <th class="th">Piattaforma</th>
-            <th class="th text-right">Crediti</th>
-          </tr>
-        </thead>
-        <tbody id="accounts-table"></tbody>
-      </table>
-    </section>
+async function setRes(id,status){
+  await fetch('/api/reservations/'+id+'/status',{
+    method:'PUT',
+    headers:{'Content-Type':'application/json','x-admin-password':pw},
+    body:JSON.stringify({status})
+  });
+  load();
+}
 
-    <!-- ORDERS -->
-    <section id="orders" class="tab hidden">
-      <h2 class="text-2xl font-semibold mb-4">Ordini</h2>
-      <table class="w-full bg-gray-800 rounded-xl overflow-hidden">
-        <thead class="bg-gray-700">
-          <tr>
-            <th class="th">Codice</th>
-            <th class="th">Cliente</th>
-            <th class="th">Piattaforma</th>
-            <th class="th text-right">Crediti</th>
+load();
+</script>
+
+</body>
+</html>

@@ -8,10 +8,11 @@
 
 <body class="bg-gray-900 text-white p-6">
 
-<h1 class="text-2xl font-bold mb-6">Dashboard</h1>
+<h1 class="text-2xl font-bold mb-4">Dashboard</h1>
 
 <button onclick="logout()" class="mb-4 text-sm text-gray-400">Logout</button>
 
+<!-- STATS -->
 <div class="grid grid-cols-4 gap-4 mb-6">
   <div class="bg-gray-800 p-4 rounded">Saldo<br><b id="balance">-</b></div>
   <div class="bg-gray-800 p-4 rounded">Ordini<br><b id="orders">-</b></div>
@@ -19,19 +20,36 @@
   <div class="bg-gray-800 p-4 rounded">Richieste<br><b id="requests">-</b></div>
 </div>
 
-<h2 class="text-xl mb-2">➕ Aggiungi movimento</h2>
+<!-- NUOVO ORDINE -->
+<h2 class="text-xl mb-2">➕ Nuovo ordine</h2>
 <div class="flex gap-2 mb-6">
-  <input id="amount" type="number" placeholder="+150000" class="bg-gray-800 p-2 rounded">
-  <input id="note" placeholder="Profitto Telegram" class="bg-gray-800 p-2 rounded">
-  <button onclick="addBalance()" class="bg-emerald-500 text-black px-4 rounded">Salva</button>
+  <input id="oName" placeholder="Cliente" class="bg-gray-800 p-2 rounded">
+  <select id="oPlatform" class="bg-gray-800 p-2 rounded">
+    <option value="ps">PS</option>
+    <option value="xbox">Xbox</option>
+    <option value="pc">PC</option>
+  </select>
+  <input id="oCoins" type="number" placeholder="Crediti" class="bg-gray-800 p-2 rounded">
+  <button onclick="createOrder()" class="bg-emerald-500 text-black px-4 rounded">Crea</button>
 </div>
 
-<h2 class="text-xl mb-2">Ultimi movimenti</h2>
-<div id="movements" class="mb-8"></div>
+<!-- ORDERS -->
+<h2 class="text-xl mb-2">Ordini</h2>
+<div id="ordersList" class="mb-6"></div>
+
+<!-- BALANCE -->
+<h2 class="text-xl mb-2">➕ Movimento saldo</h2>
+<div class="flex gap-2 mb-4">
+  <input id="amount" type="number" placeholder="+150000" class="bg-gray-800 p-2 rounded">
+  <input id="note" placeholder="Profitto" class="bg-gray-800 p-2 rounded">
+  <button onclick="addBalance()" class="bg-emerald-500 text-black px-4 rounded">Aggiungi</button>
+</div>
+
+<div id="movements"></div>
 
 <script>
 const pw = localStorage.getItem('pw');
-if (!pw) location.href = '/';
+if (!pw) location.href='/';
 
 function api(url, method='GET', body){
   return fetch(url,{
@@ -51,12 +69,44 @@ async function load(){
   pending.textContent = s.pending;
   requests.textContent = s.reservations;
 
+  const o = await api('/api/orders');
+  ordersList.innerHTML = o.map(x=>`
+    <div class="bg-gray-800 p-2 mb-1 rounded">
+      ${x.order_code} – ${x.customer_name} – ${x.status}
+      <button onclick="setStatus(${x.id},'completed')" class="ml-2 bg-emerald-500 text-black px-2 rounded">✔</button>
+      ${x.status==='completed'?`
+        <button onclick="deleteOrder(${x.id})" class="ml-2 bg-red-600 px-2 rounded">🗑</button>
+      `:''}
+    </div>
+  `).join('');
+
   const m = await api('/api/balance');
   movements.innerHTML = m.map(x=>`
     <div class="bg-gray-800 p-2 mb-1 rounded">
       ${x.amount>0?'+':''}${x.amount.toLocaleString()} – ${x.note}
     </div>
   `).join('');
+}
+
+async function createOrder(){
+  await api('/api/orders','POST',{
+    customer_name:oName.value,
+    platform:oPlatform.value,
+    coins:Number(oCoins.value)
+  });
+  oName.value='';oCoins.value='';
+  load();
+}
+
+async function setStatus(id,status){
+  await api('/api/orders/'+id+'/status','PUT',{status});
+  load();
+}
+
+async function deleteOrder(id){
+  if(!confirm('Eliminare ordine completato?'))return;
+  await api('/api/orders/'+id,'DELETE');
+  load();
 }
 
 async function addBalance(){

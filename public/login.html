@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-900 flex items-center justify-center min-h-screen text-white">
+  <div class="bg-gray-800 p-8 rounded-xl w-full max-w-sm">
+    <h2 class="text-2xl font-bold mb-4 text-center">Login</h2>
+
+    <input id="pw" type="password"
+      class="w-full p-3 mb-4 rounded bg-gray-700"
+      placeholder="Password">
+
+    <button onclick="login()"
+      class="w-full bg-emerald-500 text-black py-2 rounded">
+      Entra
+    </button>
+
+    <p id="err" class="hidden text-red-400 mt-3 text-center">
+      Password errata
+    </p>
+  </div>
+
+<script>
+async function login() {
+  const res = await fetch('/api/login', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ password: pw.value })
+  });
+
+  if (!res.ok) {
+    err.classList.remove('hidden');
+    return;
+  }
+
+  localStorage.setItem('pw', pw.value);
+  window.location.href = '/dashboard';
+}
+</script>
+</body>
+</html>
+``

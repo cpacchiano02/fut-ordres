@@ -5,16 +5,13 @@ const path = require('path');
 
 const app = express();
 const db = new Database('app.db');
-
-// ✅ Password admin
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
-// ---------------- Middleware ----------------
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ---------------- Auth ----------------
+// ---------------- AUTH ----------------
 function auth(req, res, next) {
   if (req.headers['x-admin-password'] !== ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -45,17 +42,20 @@ CREATE TABLE IF NOT EXISTS reservations (
 );
 `);
 
-// ---------------- Utils ----------------
 function genCode() {
   return 'ORD-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-// ---------------- Routes ----------------
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+// ---------------- ROUTES ----------------
+app.get('/', (req, res) =>
+  res.sendFile(path.join(__dirname, 'public/login.html'))
+);
 
-// -------- LOGIN --------
+app.get('/dashboard', (req, res) =>
+  res.sendFile(path.join(__dirname, 'public/dashboard.html'))
+);
+
+// ---------------- LOGIN ----------------
 app.post('/api/login', (req, res) => {
   if (req.body.password === ADMIN_PASSWORD) {
     return res.json({ success: true });
@@ -63,7 +63,7 @@ app.post('/api/login', (req, res) => {
   res.status(401).json({ error: 'Password errata' });
 });
 
-// -------- STATS --------
+// ---------------- STATS ----------------
 app.get('/api/stats', auth, (req, res) => {
   res.json({
     orders: db.prepare('SELECT COUNT(*) c FROM orders').get().c,
@@ -72,7 +72,7 @@ app.get('/api/stats', auth, (req, res) => {
   });
 });
 
-// -------- ORDERS --------
+// ---------------- ORDERS ----------------
 app.get('/api/orders', auth, (req, res) => {
   res.json(db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all());
 });
@@ -92,28 +92,16 @@ app.put('/api/orders/:id/status', auth, (req, res) => {
   res.json({ success: true });
 });
 
-// ✅ Elimina singolo ordine completato
 app.delete('/api/orders/:id', auth, (req, res) => {
-  const order = db.prepare(
-    'SELECT status FROM orders WHERE id=?'
-  ).get(req.params.id);
-
-  if (!order) return res.status(404).json({ error: 'Ordine non trovato' });
-  if (order.status !== 'completed') {
-    return res.status(400).json({ error: 'Puoi eliminare solo ordini completati' });
+  const o = db.prepare('SELECT status FROM orders WHERE id=?').get(req.params.id);
+  if (!o || o.status !== 'completed') {
+    return res.status(400).json({ error: 'Solo ordini completati' });
   }
-
   db.prepare('DELETE FROM orders WHERE id=?').run(req.params.id);
   res.json({ success: true });
 });
 
-// ✅ Elimina tutti gli ordini completati
-app.delete('/api/orders-completed', auth, (req, res) => {
-  db.prepare("DELETE FROM orders WHERE status='completed'").run();
-  res.json({ success: true });
-});
-
-// -------- RESERVATIONS --------
+// ---------------- RESERVATIONS ----------------
 app.get('/api/reservations', auth, (req, res) => {
   res.json(db.prepare('SELECT * FROM reservations ORDER BY created_at DESC').all());
 });
@@ -128,10 +116,7 @@ app.post('/api/reservations', (req, res) => {
 });
 
 app.post('/api/reservations/:id/create-order', auth, (req, res) => {
-  const r = db.prepare(
-    'SELECT * FROM reservations WHERE id=?'
-  ).get(req.params.id);
-
+  const r = db.prepare('SELECT * FROM reservations WHERE id=?').get(req.params.id);
   if (!r) return res.status(404).json({ error: 'Not found' });
 
   db.prepare(`
@@ -139,14 +124,13 @@ app.post('/api/reservations/:id/create-order', auth, (req, res) => {
     VALUES (?, ?, ?, ?)
   `).run(genCode(), r.customer_name, r.platform, r.quantity);
 
-  db.prepare(
-    "UPDATE reservations SET status='confirmed' WHERE id=?"
-  ).run(req.params.id);
+  db.prepare(`UPDATE reservations SET status='confirmed' WHERE id=?`)
+    .run(req.params.id);
 
   res.json({ success: true });
 });
 
-// ---------------- Start ----------------
+// ---------------- START ----------------
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log('✅ Server running on port', PORT);

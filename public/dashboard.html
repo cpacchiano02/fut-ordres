@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-900 text-white p-6">
+
+<h1 class="text-2xl font-bold mb-6">Dashboard</h1>
+
+<button onclick="logout()" class="mb-4 text-sm text-gray-400">Logout</button>
+
+<div id="stats" class="mb-6"></div>
+<div id="orders"></div>
+
+<script>
+const pw = localStorage.getItem('pw');
+if (!pw) location.href = '/';
+
+function api(url, method='GET', body) {
+  return fetch(url, {
+    method,
+    headers:{
+      'Content-Type':'application/json',
+      'x-admin-password': pw
+    },
+    body: body ? JSON.stringify(body) : undefined
+  }).then(r=>r.json());
+}
+
+async function load() {
+  const s = await api('/api/stats');
+  stats.innerHTML = `
+    Ordini: ${s.orders} |
+    Pending: ${s.pending} |
+    Richieste: ${s.reservations}
+  `;
+
+  const o = await api('/api/orders');
+  orders.innerHTML = o.map(x=>`
+    <div class="bg-gray-800 p-3 mt-2 rounded">
+      ${x.order_code} – ${x.customer_name} – ${x.status}
+    </div>
+  `).join('');
+}
+
+function logout(){
+  localStorage.removeItem('pw');
+  location.href='/';
+}
+
+load();
+</script>
+</body>
+</html>

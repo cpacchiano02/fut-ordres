@@ -3,16 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <title>Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="bg-gray-900 text-white p-6">
 
 <h1 class="text-2xl font-bold mb-4">Dashboard</h1>
-
 <button onclick="logout()" class="mb-4 text-sm text-gray-400">Logout</button>
 
-<!-- STATS -->
 <div class="grid grid-cols-4 gap-4 mb-6">
   <div class="bg-gray-800 p-4 rounded">Saldo<br><b id="balance">-</b></div>
   <div class="bg-gray-800 p-4 rounded">Ordini<br><b id="orders">-</b></div>
@@ -20,7 +19,6 @@
   <div class="bg-gray-800 p-4 rounded">Richieste<br><b id="requests">-</b></div>
 </div>
 
-<!-- NUOVO ORDINE -->
 <h2 class="text-xl mb-2">➕ Nuovo ordine</h2>
 <div class="flex gap-2 mb-6">
   <input id="oName" placeholder="Cliente" class="bg-gray-800 p-2 rounded">
@@ -33,15 +31,13 @@
   <button onclick="createOrder()" class="bg-emerald-500 text-black px-4 rounded">Crea</button>
 </div>
 
-<!-- ORDERS -->
 <h2 class="text-xl mb-2">Ordini</h2>
 <div id="ordersList" class="mb-6"></div>
 
-<!-- BALANCE -->
 <h2 class="text-xl mb-2">➕ Movimento saldo</h2>
 <div class="flex gap-2 mb-4">
   <input id="amount" type="number" placeholder="+150000" class="bg-gray-800 p-2 rounded">
-  <input id="note" placeholder="Profitto" class="bg-gray-800 p-2 rounded">
+  <input id="note" placeholder="Profitto bot" class="bg-gray-800 p-2 rounded">
   <button onclick="addBalance()" class="bg-emerald-500 text-black px-4 rounded">Aggiungi</button>
 </div>
 

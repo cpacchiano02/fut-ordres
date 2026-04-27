@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// -------- AUTH --------
+// ---------- AUTH ----------
 function auth(req, res, next) {
   if (req.headers['x-admin-password'] !== ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -19,7 +19,7 @@ function auth(req, res, next) {
   next();
 }
 
-// -------- DB --------
+// ---------- DB ----------
 db.exec(`
 CREATE TABLE IF NOT EXISTS orders (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,14 +47,21 @@ CREATE TABLE IF NOT EXISTS balance_movements (
   note TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS telegram_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  raw_message TEXT,
+  parsed_amount INTEGER,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
 `);
 
-// -------- UTILS --------
+// ---------- UTILS ----------
 function genCode() {
   return 'ORD-' + Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-// -------- ROUTES --------
+// ---------- ROUTES ----------
 app.get('/', (req, res) =>
   res.sendFile(path.join(__dirname, 'public/login.html'))
 );
@@ -63,7 +70,7 @@ app.get('/dashboard', (req, res) =>
   res.sendFile(path.join(__dirname, 'public/dashboard.html'))
 );
 
-// -------- LOGIN --------
+// ---------- LOGIN ----------
 app.post('/api/login', (req, res) => {
   if (req.body.password === ADMIN_PASSWORD) {
     return res.json({ success: true });
@@ -71,7 +78,7 @@ app.post('/api/login', (req, res) => {
   res.status(401).json({ error: 'Password errata' });
 });
 
-// -------- STATS --------
+// ---------- STATS ----------
 app.get('/api/stats', auth, (req, res) => {
   const balance = db.prepare(
     'SELECT COALESCE(SUM(amount),0) AS total FROM balance_movements'
@@ -85,14 +92,13 @@ app.get('/api/stats', auth, (req, res) => {
   });
 });
 
-// -------- BALANCE --------
+// ---------- BALANCE ----------
 app.get('/api/balance', auth, (req, res) => {
   res.json(
     db.prepare('SELECT * FROM balance_movements ORDER BY created_at DESC').all()
   );
 });
 
-// aggiunta manuale (profitto bot, correzioni)
 app.post('/api/balance', auth, (req, res) => {
   const { amount, note } = req.body;
   db.prepare(
@@ -101,7 +107,7 @@ app.post('/api/balance', auth, (req, res) => {
   res.json({ success: true });
 });
 
-// -------- ORDERS --------
+// ---------- ORDERS ----------
 app.get('/api/orders', auth, (req, res) => {
   res.json(db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all());
 });
@@ -115,7 +121,7 @@ app.post('/api/orders', auth, (req, res) => {
   res.json({ success: true });
 });
 
-// ✅ quando COMPLETI l’ordine → SALDO -= coins
+// ✅ COMPLETAMENTO ORDINE = USCITA CREDITI
 app.put('/api/orders/:id/status', auth, (req, res) => {
   const { status } = req.body;
   const order = db.prepare(
@@ -124,14 +130,10 @@ app.put('/api/orders/:id/status', auth, (req, res) => {
 
   if (!order) return res.status(404).json({ error: 'Ordine non trovato' });
 
-  // se passa a completed ora, registra uscita crediti
   if (status === 'completed' && order.status !== 'completed') {
     db.prepare(
       'INSERT INTO balance_movements (amount, note) VALUES (?, ?)'
-    ).run(
-      -order.coins,
-      `Vendita ordine ${order.order_code}`
-    );
+    ).run(-order.coins, `Vendita ordine ${order.order_code}`);
   }
 
   db.prepare(
@@ -142,10 +144,14 @@ app.put('/api/orders/:id/status', auth, (req, res) => {
 });
 
 app.delete('/api/orders/:id', auth, (req, res) => {
-  const o = db.prepare('SELECT status FROM orders WHERE id=?').get(req.params.id);
+  const o = db.prepare(
+    'SELECT status FROM orders WHERE id=?'
+  ).get(req.params.id);
+
   if (!o || o.status !== 'completed') {
     return res.status(400).json({ error: 'Solo ordini completati' });
   }
+
   db.prepare('DELETE FROM orders WHERE id=?').run(req.params.id);
   res.json({ success: true });
 });
@@ -155,7 +161,7 @@ app.delete('/api/orders-completed', auth, (req, res) => {
   res.json({ success: true });
 });
 
-// -------- RESERVATIONS --------
+// ---------- RESERVATIONS ----------
 app.get('/api/reservations', auth, (req, res) => {
   res.json(db.prepare('SELECT * FROM reservations ORDER BY created_at DESC').all());
 });
@@ -184,7 +190,31 @@ app.post('/api/reservations/:id/create-order', auth, (req, res) => {
   res.json({ success: true });
 });
 
-// -------- START --------
+// ---------- TELEGRAM WEBHOOK ----------
+app.post('/api/telegram/webhook', (req, res) => {
+  const text = req.body?.message?.text || '';
+  let amount = null;
+
+  const k = text.match(/([+-]?\d+)\s*k/i);
+  if (k) amount = parseInt(k[1]) * 1000;
+
+  const m = text.match(/(\d+(\.\d+)?)\s*m/i);
+  if (m) amount = Math.round(parseFloat(m[1]) * 1_000_000);
+
+  if (amount !== null) {
+    db.prepare(
+      'INSERT INTO balance_movements (amount, note) VALUES (?, ?)'
+    ).run(amount, `Telegram: ${text}`);
+
+    db.prepare(
+      'INSERT INTO telegram_logs (raw_message, parsed_amount) VALUES (?, ?)'
+    ).run(text, amount);
+  }
+
+  res.json({ ok: true });
+});
+
+// ---------- START ----------
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log('✅ Server running on port', PORT);

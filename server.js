@@ -92,6 +92,7 @@ app.get('/api/balance', auth, (req, res) => {
   );
 });
 
+// aggiunta manuale (profitto bot, correzioni)
 app.post('/api/balance', auth, (req, res) => {
   const { amount, note } = req.body;
   db.prepare(
@@ -114,22 +115,37 @@ app.post('/api/orders', auth, (req, res) => {
   res.json({ success: true });
 });
 
+// ✅ quando COMPLETI l’ordine → SALDO -= coins
 app.put('/api/orders/:id/status', auth, (req, res) => {
+  const { status } = req.body;
+  const order = db.prepare(
+    'SELECT * FROM orders WHERE id=?'
+  ).get(req.params.id);
+
+  if (!order) return res.status(404).json({ error: 'Ordine non trovato' });
+
+  // se passa a completed ora, registra uscita crediti
+  if (status === 'completed' && order.status !== 'completed') {
+    db.prepare(
+      'INSERT INTO balance_movements (amount, note) VALUES (?, ?)'
+    ).run(
+      -order.coins,
+      `Vendita ordine ${order.order_code}`
+    );
+  }
+
   db.prepare(
     'UPDATE orders SET status=? WHERE id=?'
-  ).run(req.body.status, req.params.id);
+  ).run(status, req.params.id);
+
   res.json({ success: true });
 });
 
 app.delete('/api/orders/:id', auth, (req, res) => {
-  const o = db.prepare(
-    'SELECT status FROM orders WHERE id=?'
-  ).get(req.params.id);
-
+  const o = db.prepare('SELECT status FROM orders WHERE id=?').get(req.params.id);
   if (!o || o.status !== 'completed') {
     return res.status(400).json({ error: 'Solo ordini completati' });
   }
-
   db.prepare('DELETE FROM orders WHERE id=?').run(req.params.id);
   res.json({ success: true });
 });
@@ -154,10 +170,7 @@ app.post('/api/reservations', (req, res) => {
 });
 
 app.post('/api/reservations/:id/create-order', auth, (req, res) => {
-  const r = db.prepare(
-    'SELECT * FROM reservations WHERE id=?'
-  ).get(req.params.id);
-
+  const r = db.prepare('SELECT * FROM reservations WHERE id=?').get(req.params.id);
   if (!r) return res.status(404).json({ error: 'Not found' });
 
   db.prepare(`
@@ -165,9 +178,8 @@ app.post('/api/reservations/:id/create-order', auth, (req, res) => {
     VALUES (?, ?, ?, ?)
   `).run(genCode(), r.customer_name, r.platform, r.quantity);
 
-  db.prepare(
-    "UPDATE reservations SET status='confirmed' WHERE id=?"
-  ).run(req.params.id);
+  db.prepare("UPDATE reservations SET status='confirmed' WHERE id=?")
+    .run(req.params.id);
 
   res.json({ success: true });
 });

@@ -12,38 +12,60 @@
 
 <button onclick="logout()" class="mb-4 text-sm text-gray-400">Logout</button>
 
-<div id="stats" class="mb-6"></div>
-<div id="orders"></div>
+<div class="grid grid-cols-4 gap-4 mb-6">
+  <div class="bg-gray-800 p-4 rounded">Saldo<br><b id="balance">-</b></div>
+  <div class="bg-gray-800 p-4 rounded">Ordini<br><b id="orders">-</b></div>
+  <div class="bg-gray-800 p-4 rounded">Pending<br><b id="pending">-</b></div>
+  <div class="bg-gray-800 p-4 rounded">Richieste<br><b id="requests">-</b></div>
+</div>
+
+<h2 class="text-xl mb-2">➕ Aggiungi movimento</h2>
+<div class="flex gap-2 mb-6">
+  <input id="amount" type="number" placeholder="+150000" class="bg-gray-800 p-2 rounded">
+  <input id="note" placeholder="Profitto Telegram" class="bg-gray-800 p-2 rounded">
+  <button onclick="addBalance()" class="bg-emerald-500 text-black px-4 rounded">Salva</button>
+</div>
+
+<h2 class="text-xl mb-2">Ultimi movimenti</h2>
+<div id="movements" class="mb-8"></div>
 
 <script>
 const pw = localStorage.getItem('pw');
 if (!pw) location.href = '/';
 
-function api(url, method='GET', body) {
-  return fetch(url, {
+function api(url, method='GET', body){
+  return fetch(url,{
     method,
     headers:{
       'Content-Type':'application/json',
-      'x-admin-password': pw
+      'x-admin-password':pw
     },
-    body: body ? JSON.stringify(body) : undefined
+    body:body?JSON.stringify(body):undefined
   }).then(r=>r.json());
 }
 
-async function load() {
+async function load(){
   const s = await api('/api/stats');
-  stats.innerHTML = `
-    Ordini: ${s.orders} |
-    Pending: ${s.pending} |
-    Richieste: ${s.reservations}
-  `;
+  balance.textContent = s.balance.toLocaleString();
+  orders.textContent = s.orders;
+  pending.textContent = s.pending;
+  requests.textContent = s.reservations;
 
-  const o = await api('/api/orders');
-  orders.innerHTML = o.map(x=>`
-    <div class="bg-gray-800 p-3 mt-2 rounded">
-      ${x.order_code} – ${x.customer_name} – ${x.status}
+  const m = await api('/api/balance');
+  movements.innerHTML = m.map(x=>`
+    <div class="bg-gray-800 p-2 mb-1 rounded">
+      ${x.amount>0?'+':''}${x.amount.toLocaleString()} – ${x.note}
     </div>
   `).join('');
+}
+
+async function addBalance(){
+  await api('/api/balance','POST',{
+    amount:Number(amount.value),
+    note:note.value
+  });
+  amount.value='';note.value='';
+  load();
 }
 
 function logout(){
@@ -53,5 +75,6 @@ function logout(){
 
 load();
 </script>
+
 </body>
 </html>

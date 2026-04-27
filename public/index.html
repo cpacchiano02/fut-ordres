@@ -1,397 +1,217 @@
 <!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8" />
-  <title>Orders Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<html lang="it-scale=1"><html lang="it">
 
-  <!-- Tailwind corretto -->
+  <!-- ✅ Tailwind corretto -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
-<body class="bg-slate-950 text-white min-h-screen">
+<body class="bg-gray-900 text-white min-h-screen">
 
-  <!-- LOGIN -->
-  <section id="loginSection" class="min-h-screen flex items-center justify-center px-4">
-    <div class="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-8">
-      <h1 class="text-2xl font-bold text-center mb-6">🔐 Login</h1>
+<!-- LOGIN -->
+<div id="login" class="min-h-screen flex items-center justify-center">
+  <div class="bg-gray-800 p-8 rounded-xl w-full max-w-sm">
+    <h2 class="text-2xl font-bold mb-4 text-center">Login</h2>
+    <input id="password" type="password" placeholder="Password"
+      class="w-full p-3 mb-4 rounded bg-gray-700">
+    <button onclick="doLogin()" class="w-full bg-emerald-500 text-black py-2 rounded">
+      Entra
+    </button>
+    <p id="loginError" class="hidden text-red-400 mt-2 text-center">
+      Password errata
+    </p>
+  </div>
+</div>
 
-      <div class="space-y-4">
-        <input
-          id="passwordInput"
-          type="password"
-          placeholder="Password"
-          class="w-full rounded-xl bg-slate-800 border border-slate-700 px-4 py-3 outline-none focus:border-emerald-500"
-        />
+<!-- APP -->
+<div id="app" class="hidden">
 
-        <button
-          onclick="doLogin()"
-          class="w-full bg-emerald-500 hover:bg-emerald-600 text-black font-semibold py-3 rounded-xl transition"
-        >
-          Entra
-        </button>
+<header class="bg-gray-800 px-6 py-4 flex justify-between">
+  <h1 class="font-bold text-emerald-400">Orders Manager</h1>
+  <button onclick="logout()">Logout</button>
+</header>
 
-        <p id="loginError" class="hidden text-sm text-red-400 text-center">
-          Password errata
-        </p>
+<div class="flex">
+
+<aside class="w-64 bg-gray-800 p-4 space-y-2">
+  <button onclick="show('dashboard')" class="menu">Dashboard</button>
+  <button onclick="show('orders')" class="menu">Ordini</button>
+  <button onclick="show('requests')" class="menu">Richieste</button>
+</aside>
+
+<main class="flex-1 p-6">
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="view">
+  <div class="grid grid-cols-3 gap-4">
+    <div class="card">Ordini<br><span id="s-orders">-</span></div>
+    <div class="card">Pending<br><span id="s-pending">-</span></div>
+    <div class="card">Richieste<br><span id="s-req">-</span></div>
+  </div>
+</div>
+
+<!-- ORDERS -->
+<div id="orders" class="view hidden">
+  <div class="flex justify-between mb-4">
+    <button onclick="toggleForm()" class="bg-emerald-500 text-black px-3 py-1 rounded">
+      + Nuovo ordine
+    </button>
+    <button onclick="deleteCompletedOrders()" class="bg-red-600 px-3 py-1 rounded">
+      🧹 Pulisci completati
+    </button>
+  </div>
+
+  <div id="orderForm" class="hidden bg-gray-800 p-4 rounded mb-4">
+    <input id="o-name" placeholder="Cliente" class="w-full mb-2 p-2 bg-gray-700 rounded">
+    <select id="o-platform" class="w-full mb-2 p-2 bg-gray-700 rounded">
+      <option value="ps">PlayStation</option>
+      <option value="xbox">Xbox</option>
+      <option value="pc">PC</option>
+    </select>
+    <input id="o-coins" type="number" placeholder="Crediti"
+      class="w-full mb-2 p-2 bg-gray-700 rounded">
+    <button onclick="createOrder()" class="bg-emerald-500 text-black px-3 py-1 rounded">
+      Crea
+    </button>
+  </div>
+
+  <div id="ordersList"></div>
+</div>
+
+<!-- REQUESTS -->
+<div id="requests" class="view hidden">
+  <div id="requestsList"></div>
+</div>
+
+</main>
+</div>
+</div>
+
+<style>
+.menu{width:100%;text-align:left;padding:10px;border-radius:8px}
+.menu:hover{background:#1f2937}
+.card{background:#1f2937;padding:20px;border-radius:16px;font-size:20px}
+.view{animation:fade .2s}
+@keyframes fade{from{opacity:.7}to{opacity:1}}
+</style>
+
+<script>
+const KEY='pw';
+
+async function api(url,method='GET',body){
+  const res = await fetch(url,{
+    method,
+    headers:{
+      'Content-Type':'application/json',
+      'x-admin-password':localStorage.getItem(KEY)
+    },
+    body:body?JSON.stringify(body):undefined
+  });
+  return res.json();
+}
+
+async function doLogin(){
+  const res = await fetch('/api/login',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({password:password.value})
+  });
+  if(!res.ok){loginError.classList.remove('hidden');return;}
+  localStorage.setItem(KEY,password.value);
+  init();
+}
+
+function logout(){localStorage.removeItem(KEY);location.reload();}
+
+function show(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  if(id==='orders')loadOrders();
+  if(id==='requests')loadRequests();
+}
+
+async function loadStats(){
+  const s = await api('/api/stats');
+  s-orders.textContent=s.orders;
+  s-pending.textContent=s.pending;
+  s-req.textContent=s.reservations;
+}
+
+function toggleForm(){orderForm.classList.toggle('hidden');}
+
+async function createOrder(){
+  await api('/api/orders','POST',{
+    customer_name:o-name.value,
+    platform:o-platform.value,
+    coins:Number(o-coins.value)
+  });
+  orderForm.classList.add('hidden');
+  loadOrders();loadStats();
+}
+
+async function loadOrders(){
+  const data = await api('/api/orders');
+  ordersList.innerHTML=data.map(o=>`
+    <div class="bg-gray-800 p-3 mb-2 rounded">
+      <b>${o.order_code}</b> – ${o.customer_name} – ${o.status}
+      <div class="mt-2">
+        ${['pending','processing','completed'].map(s=>`
+          <button onclick="setStatus(${o.id},'${s}')" class="px-2 py-1 bg-emerald-600 mr-1">${s}</button>
+        `).join('')}
+        ${o.status==='completed'?`
+          <button onclick="deleteOrder(${o.id})" class="px-2 py-1 bg-red-600 ml-2">Elimina</button>
+        `:''}
       </div>
     </div>
-  </section>
+  `).join('');
+}
 
-  <!-- APP -->
-  <section id="appSection" class="hidden min-h-screen">
-    <!-- Header -->
-    <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex items-center justify-between">
-      <h1 class="text-xl font-bold text-emerald-400">📊 Orders Dashboard</h1>
-      <button
-        onclick="logout()"
-        class="text-sm text-slate-300 hover:text-white"
-      >
-        Logout
+async function setStatus(id,status){
+  await api('/api/orders/'+id+'/status','PUT',{status});
+  loadOrders();loadStats();
+}
+
+async function deleteOrder(id){
+  if(!confirm('Eliminare ordine completato?'))return;
+  await api('/api/orders/'+id,'DELETE');
+  loadOrders();loadStats();
+}
+
+async function deleteCompletedOrders(){
+  if(!confirm('Eliminare TUTTI gli ordini completati?'))return;
+  await api('/api/orders-completed','DELETE');
+  loadOrders();loadStats();
+}
+
+async function loadRequests(){
+  const data = await api('/api/reservations');
+  requestsList.innerHTML=data.map(r=>`
+    <div class="bg-gray-800 p-3 mb-2 rounded">
+      <b>${r.customer_name}</b> (${r.platform})
+      <button onclick="fromReq(${r.id})" class="ml-2 bg-emerald-500 text-black px-2 py-1 rounded">
+        Crea ordine
       </button>
-    </header>
-
-    <div class="flex">
-      <!-- Sidebar -->
-      <aside class="w-64 min-h-screen bg-slate-900 border-r border-slate-800 p-4 space-y-2">
-        <button onclick="showView('dashboardView')" class="menu-btn">Dashboard</button>
-        <button onclick="showView('ordersView')" class="menu-btn">Ordini</button>
-        <button onclick="showView('requestsView')" class="menu-btn">Richieste</button>
-      </aside>
-
-      <!-- Main -->
-      <main class="flex-1 p-6">
-        <!-- DASHBOARD -->
-        <section id="dashboardView" class="view">
-          <h2 class="text-2xl font-semibold mb-6">Dashboard</h2>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="card">
-              <div class="text-slate-400 text-sm mb-2">Ordini totali</div>
-              <div id="statOrders" class="text-3xl font-bold text-emerald-400">-</div>
-            </div>
-
-            <div class="card">
-              <div class="text-slate-400 text-sm mb-2">Ordini in attesa</div>
-              <div id="statPending" class="text-3xl font-bold text-amber-400">-</div>
-            </div>
-
-            <div class="card">
-              <div class="text-slate-400 text-sm mb-2">Nuove richieste</div>
-              <div id="statReservations" class="text-3xl font-bold text-blue-400">-</div>
-            </div>
-          </div>
-        </section>
-
-        <!-- ORDERS -->
-        <section id="ordersView" class="view hidden">
-          <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-semibold">Ordini</h2>
-            <button
-              onclick="toggleNewOrderForm()"
-              class="bg-emerald-500 hover:bg-emerald-600 text-black font-medium px-4 py-2 rounded-xl"
-            >
-              + Nuovo ordine
-            </button>
-          </div>
-
-          <!-- Form nuovo ordine -->
-          <div id="newOrderForm" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-5 mb-6">
-            <h3 class="text-lg font-semibold mb-4">Crea ordine</h3>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <input
-                id="orderCustomerName"
-                type="text"
-                placeholder="Nome cliente"
-                class="rounded-xl bg-slate-800 border border-slate-700 px-4 py-3 outline-none focus:border-emerald-500"
-              />
-
-              <select
-                id="orderPlatform"
-                class="rounded-xl bg-slate-800 border border-slate-700 px-4 py-3 outline-none focus:border-emerald-500"
-              >
-                <option value="ps">PlayStation</option>
-                <option value="xbox">Xbox</option>
-                <option value="pc">PC</option>
-              </select>
-
-              <input
-                id="orderCoins"
-                type="number"
-                placeholder="Quantità"
-                class="rounded-xl bg-slate-800 border border-slate-700 px-4 py-3 outline-none focus:border-emerald-500"
-              />
-            </div>
-
-            <div class="mt-4 flex gap-3">
-              <button
-                onclick="createOrder()"
-                class="bg-emerald-500 hover:bg-emerald-600 text-black font-medium px-4 py-2 rounded-xl"
-              >
-                Salva ordine
-              </button>
-
-              <button
-                onclick="toggleNewOrderForm()"
-                class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-xl"
-              >
-                Annulla
-              </button>
-            </div>
-          </div>
-
-          <!-- Lista ordini -->
-          <div id="ordersList" class="space-y-3"></div>
-        </section>
-
-        <!-- REQUESTS -->
-        <section id="requestsView" class="view hidden">
-          <h2 class="text-2xl font-semibold mb-6">Richieste</h2>
-          <div id="requestsList" class="space-y-3"></div>
-        </section>
-      </main>
     </div>
-  </section>
+  `).join('');
+}
 
-  <style>
-    .menu-btn {
-      width: 100%;
-      text-align: left;
-      padding: 12px 14px;
-      border-radius: 12px;
-      background: transparent;
-      color: #e2e8f0;
-      transition: background .2s ease;
-    }
+async function fromReq(id){
+  await api('/api/reservations/'+id+'/create-order','POST');
+  loadOrders();loadStats();loadRequests();
+}
 
-    .menu-btn:hover {
-      background: #1e293b;
-    }
+function init(){
+  if(localStorage.getItem(KEY)){
+    login.classList.add('hidden');
+    app.classList.remove('hidden');
+    loadStats();
+  }
+}
 
-    .card {
-      background: #0f172a;
-      border: 1px solid #1e293b;
-      border-radius: 20px;
-      padding: 24px;
-    }
-  </style>
+init();
+</script>
 
-  <script>
-    const PASSWORD_KEY = 'admin_password';
-
-    function getPassword() {
-      return localStorage.getItem(PASSWORD_KEY);
-    }
-
-    async function api(url, method = 'GET', body = null, skipAuth = false) {
-      const headers = {
-        'Content-Type': 'application/json'
-      };
-
-      if (!skipAuth) {
-        headers['x-admin-password'] = getPassword() || '';
-      }
-
-      const response = await fetch(url, {
-        method,
-        headers,
-        body: body ? JSON.stringify(body) : undefined
-      });
-
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Errore richiesta');
-      }
-
-      return data;
-    }
-
-    async function doLogin() {
-      const password = document.getElementById('passwordInput').value;
-      const loginError = document.getElementById('loginError');
-
-      loginError.classList.add('hidden');
-
-      try {
-        await api('/api/login', 'POST', { password }, true);
-        localStorage.setItem(PASSWORD_KEY, password);
-        initApp();
-      } catch (err) {
-        loginError.classList.remove('hidden');
-      }
-    }
-
-    function logout() {
-      localStorage.removeItem(PASSWORD_KEY);
-      document.getElementById('appSection').classList.add('hidden');
-      document.getElementById('loginSection').classList.remove('flex');
-      document.getElementById('loginSection').classList.remove('hidden');
-      document.getElementById('loginSection').classList.add('flex');
-      document.getElementById('passwordInput').value = '';
-    }
-
-    function showView(viewId) {
-      document.querySelectorAll('.view').forEach(el => el.classList.add('hidden'));
-      document.getElementById(viewId).classList.remove('hidden');
-
-      if (viewId === 'ordersView') {
-        loadOrders();
-      }
-
-      if (viewId === 'requestsView') {
-        loadRequests();
-      }
-    }
-
-    function toggleNewOrderForm() {
-      document.getElementById('newOrderForm').classList.toggle('hidden');
-    }
-
-    async function loadStats() {
-      const stats = await api('/api/stats');
-      document.getElementById('statOrders').textContent = stats.orders ?? 0;
-      document.getElementById('statPending').textContent = stats.pending ?? 0;
-      document.getElementById('statReservations').textContent = stats.reservations ?? 0;
-    }
-
-    async function loadOrders() {
-      const orders = await api('/api/orders');
-      const container = document.getElementById('ordersList');
-
-      if (!orders.length) {
-        container.innerHTML = `
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-slate-400">
-            Nessun ordine presente
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = orders.map(order => `
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <div>
-              <div class="font-semibold text-lg">${order.order_code || 'Ordine'}</div>
-              <div class="text-slate-400 text-sm">
-                ${order.customer_name || '-'} · ${order.platform || '-'} · ${Number(order.coins || 0).toLocaleString()}
-              </div>
-            </div>
-
-            <div class="text-sm px-3 py-1 rounded-full bg-slate-800 border border-slate-700 w-fit">
-              ${order.status || 'pending'}
-            </div>
-          </div>
-
-          <div class="mt-4 flex flex-wrap gap-2">
-            <button onclick="setOrderStatus(${order.id}, 'pending')" class="px-3 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-black text-sm font-medium">
-              pending
-            </button>
-            <button onclick="setOrderStatus(${order.id}, 'processing')" class="px-3 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium">
-              processing
-            </button>
-            <button onclick="setOrderStatus(${order.id}, 'completed')" class="px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-black text-sm font-medium">
-              completed
-            </button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    async function createOrder() {
-      const customer_name = document.getElementById('orderCustomerName').value.trim();
-      const platform = document.getElementById('orderPlatform').value;
-      const coins = Number(document.getElementById('orderCoins').value);
-
-      if (!customer_name || !platform || !coins) {
-        alert('Compila tutti i campi');
-        return;
-      }
-
-      await api('/api/orders', 'POST', {
-        customer_name,
-        platform,
-        coins
-      });
-
-      document.getElementById('orderCustomerName').value = '';
-      document.getElementById('orderCoins').value = '';
-      document.getElementById('newOrderForm').classList.add('hidden');
-
-      await loadOrders();
-      await loadStats();
-    }
-
-    async function setOrderStatus(id, status) {
-      await api(`/api/orders/${id}/status`, 'PUT', { status });
-      await loadOrders();
-      await loadStats();
-    }
-
-    async function loadRequests() {
-      const requests = await api('/api/reservations');
-      const container = document.getElementById('requestsList');
-
-      if (!requests.length) {
-        container.innerHTML = `
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 text-slate-400">
-            Nessuna richiesta presente
-          </div>
-        `;
-        return;
-      }
-
-      container.innerHTML = requests.map(request => `
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
-          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <div>
-              <div class="font-semibold text-lg">${request.customer_name || 'Richiesta'}</div>
-              <div class="text-slate-400 text-sm">
-                ${request.contact || '-'} · ${request.platform || '-'} · ${Number(request.quantity || 0).toLocaleString()}
-              </div>
-            </div>
-
-            <div class="text-sm px-3 py-1 rounded-full bg-slate-800 border border-slate-700 w-fit">
-              ${request.status || 'new'}
-            </div>
-          </div>
-
-          <div class="mt-4 flex flex-wrap gap-2">
-            <button onclick="createOrderFromRequest(${request.id})" class="px-3 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-black text-sm font-medium">
-              Crea ordine
-            </button>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    async function createOrderFromRequest(id) {
-      await api(`/api/reservations/${id}/create-order`, 'POST');
-      await loadRequests();
-      await loadOrders();
-      await loadStats();
-      showView('ordersView');
-    }
-
-    async function initApp() {
-      try {
-        await loadStats();
-        document.getElementById('loginSection').classList.add('hidden');
-        document.getElementById('appSection').classList.remove('hidden');
-        showView('dashboardView');
-      } catch (err) {
-        localStorage.removeItem(PASSWORD_KEY);
-        document.getElementById('appSection').classList.add('hidden');
-        document.getElementById('loginSection').classList.remove('hidden');
-      }
-    }
-
-    // auto-init se la password è già salvata
-    if (getPassword()) {
-      initApp();
-    }
-  </script>
 </body>
 </html>
-``
+<head>
+  <meta charset="UTF-8">
+  <title>Orders Manager</title>
